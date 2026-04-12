@@ -1,0 +1,612 @@
+@use 'variables' as *;
+
+// ── Layout global ──────────────────────────────────────────────────────────────
+.layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.main {
+  flex: 1;
+  padding: $spacing-2xl;
+  margin-left: $navbar-width;
+  transition: margin-left $transition-layout;
+  min-width: 0;
+
+  &--collapsed { margin-left: $navbar-width-collapsed; }
+
+  @media (max-width: 768px) {
+    margin-left: 0 !important;
+    padding: $spacing-lg;
+  }
+}
+
+// ── Header de page ─────────────────────────────────────────────────────────────
+.page-header {
+  margin-bottom: $spacing-2xl;
+
+  &__title {
+    font-family: $font-display;
+    font-size: 36px;
+    font-weight: 700;
+    line-height: 1.1;
+    margin-bottom: $spacing-xs;
+
+    em {
+      font-style: italic;
+      color: $amber;
+    }
+  }
+
+  &__sub {
+    color: $muted;
+    font-size: 14px;
+    font-weight: 300;
+  }
+}
+
+// ── Grille recettes ────────────────────────────────────────────────────────────
+.recipes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: $spacing-lg;
+}
+
+// ── Empty state ────────────────────────────────────────────────────────────────
+.empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 80px $spacing-lg;
+  color: $muted;
+
+  &__icon  { font-size: 52px; margin-bottom: $spacing-md; }
+  &__title { font-family: $font-display; font-size: 22px; color: $text; margin-bottom: $spacing-sm; }
+  &__sub   { font-size: 14px; font-weight: 300; }
+}
+
+// ── Import bar ─────────────────────────────────────────────────────────────────
+.import-bar {
+  display: flex;
+  gap: $spacing-sm;
+  background: $card;
+  border: 1px solid $border;
+  border-radius: $radius-lg;
+  padding: $spacing-md 20px;
+  margin-bottom: $spacing-2xl;
+  transition: border-color $transition;
+
+  &:focus-within {
+    border-color: $amber-dim;
+  }
+
+  &__input {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    color: $text;
+    font-family: $font-body;
+    font-size: 14px;
+
+    &::placeholder { color: $muted; }
+  }
+}
+
+// ── Boutons ────────────────────────────────────────────────────────────────────
+.btn-primary {
+  background: $amber;
+  color: #0f0e0d;
+  border-radius: $radius-md;
+  padding: 10px $spacing-lg;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: opacity $transition, transform 0.1s ease;
+
+  &:hover    { opacity: 0.9; }
+  &:active   { transform: scale(0.97); }
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
+}
+
+.btn-ghost {
+  background: none;
+  border: 1px solid $border;
+  border-radius: $radius-md;
+  padding: 10px $spacing-md;
+  color: $muted;
+  font-size: 13px;
+  transition: border-color $transition, color $transition;
+
+  &:hover         { border-color: $amber-dim; color: $text; }
+  &--danger:hover { border-color: $danger; color: #e57373; }
+}
+
+// ── Page détail ────────────────────────────────────────────────────────────────
+.detail {
+  max-width: 720px;
+
+  &__back {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-sm;
+    color: $muted;
+    font-size: 13px;
+    margin-bottom: $spacing-xl;
+    transition: color $transition;
+    background: none;
+    border: none;
+
+    &:hover { color: $text; }
+  }
+
+  &__thumb {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border-radius: $radius-xl;
+    margin-bottom: $spacing-xl;
+
+    &--placeholder {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: $card;
+      border-radius: $radius-xl;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 64px;
+      margin-bottom: $spacing-xl;
+    }
+  }
+
+  &__platform { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: $amber; margin-bottom: $spacing-sm; }
+  &__title    { font-family: $font-display; font-size: 32px; font-weight: 700; line-height: 1.2; margin-bottom: $spacing-xs; }
+  &__author   { font-size: 13px; color: $muted; margin-bottom: $spacing-lg; }
+
+  &__source {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-xs;
+    font-size: 12px;
+    color: $amber;
+    margin-bottom: $spacing-xl;
+    &:hover { text-decoration: underline; }
+  }
+
+  &__macros {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: $spacing-xl;
+  }
+
+  &__section {
+    margin-bottom: $spacing-xl;
+  }
+
+  &__section-title {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: $muted;
+    margin-bottom: $spacing-md;
+    padding-bottom: $spacing-sm;
+    border-bottom: 1px solid $border;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: $spacing-xl;
+  }
+}
+
+// ── Ingrédients ────────────────────────────────────────────────────────────────
+.ingredient-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: $spacing-sm 0;
+  border-bottom: 1px solid $border;
+  font-size: 14px;
+
+  &:last-child { border-bottom: none; }
+
+  &__name  { color: $text; }
+  &__notes { color: $muted; font-size: 12px; }
+  &__qty   { color: $amber; font-weight: 500; white-space: nowrap; margin-left: $spacing-md; }
+}
+
+// ── Étapes ─────────────────────────────────────────────────────────────────────
+.step-row {
+  display: flex;
+  gap: $spacing-md;
+  margin-bottom: $spacing-md;
+
+  &__num {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: $amber-glow;
+    border: 1px solid $amber-dim;
+    color: $amber;
+    font-size: 12px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  &__content  { font-size: 14px; line-height: 1.6; color: $text; }
+  &__duration { font-size: 12px; color: $muted; margin-top: 4px; }
+}
+
+// ── Tags ───────────────────────────────────────────────────────────────────────
+.tags-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+}
+
+.tag {
+  background: $card;
+  border: 1px solid $border;
+  border-radius: $radius-full;
+  padding: 4px $spacing-sm;
+  font-size: 12px;
+  color: $muted;
+}
+
+// ── Page import ────────────────────────────────────────────────────────────────
+.import-page {
+  max-width: 640px;
+
+  &__card {
+    background: $card;
+    border: 1px solid $border;
+    border-radius: $radius-lg;
+    padding: $spacing-xl;
+    margin-bottom: $spacing-lg;
+  }
+
+  &__label {
+    font-size: 12px;
+    font-weight: 500;
+    color: $muted;
+    margin-bottom: $spacing-sm;
+    display: block;
+  }
+
+  &__input {
+    width: 100%;
+    background: $surface;
+    border: 1px solid $border;
+    border-radius: $radius-md;
+    color: $text;
+    font-family: $font-body;
+    font-size: 14px;
+    padding: $spacing-sm $spacing-md;
+    outline: none;
+    transition: border-color $transition;
+    margin-bottom: $spacing-md;
+
+    &:focus { border-color: $amber-dim; }
+    &::placeholder { color: $muted; }
+  }
+
+  textarea#{&}__input {
+    resize: vertical;
+    min-height: 140px;
+  }
+
+  &__divider {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    margin: $spacing-lg 0;
+    color: $muted;
+    font-size: 12px;
+
+    &::before, &::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: $border;
+    }
+  }
+}
+
+// ── Toast ──────────────────────────────────────────────────────────────────────
+.toast {
+  position: fixed;
+  bottom: $spacing-xl;
+  right: $spacing-xl;
+  background: $card;
+  border: 1px solid $border;
+  border-radius: $radius-md;
+  padding: $spacing-md $spacing-lg;
+  font-size: 13px;
+  max-width: 320px;
+  animation: slideUp 0.25s ease;
+  z-index: 1000;
+
+  &--error   { border-color: $danger; color: #e57373; }
+  &--success { border-color: $amber-dim; color: $amber; }
+}
+
+// ── Spinner ────────────────────────────────────────────────────────────────────
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  border-top-color: #0f0e0d;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  margin-right: $spacing-sm;
+  vertical-align: middle;
+}
+
+.portions-selector {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+
+  &__btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid $border;
+    color: $text;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color $transition, background $transition;
+
+    &:hover {
+      border-color: $amber;
+      background: $amber-glow;
+      color: $amber;
+    }
+  }
+
+  &__value {
+    font-family: $font-display;
+    font-size: 28px;
+    font-weight: 700;
+    color: $amber;
+    min-width: 32px;
+    text-align: center;
+  }
+
+  &__reset {
+    font-size: 12px;
+    color: $muted;
+    border: 1px solid $border;
+    border-radius: $radius-full;
+    padding: 4px $spacing-md;
+    transition: color $transition, border-color $transition;
+
+    &:hover {
+      color: $text;
+      border-color: $amber-dim;
+    }
+  }
+}
+
+// ── Page édition ───────────────────────────────────────────────────────────────
+.edit-page {
+  max-width: 720px;
+
+  &__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $spacing-md;
+  }
+
+  &__full { grid-column: 1 / -1; }
+}
+
+.edit-section {
+  background: $card;
+  border: 1px solid $border;
+  border-radius: $radius-lg;
+  padding: $spacing-xl;
+  margin-bottom: $spacing-lg;
+
+  &__title {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: $muted;
+    margin-bottom: $spacing-lg;
+    padding-bottom: $spacing-sm;
+    border-bottom: 1px solid $border;
+  }
+}
+
+.edit-field {
+  margin-bottom: $spacing-md;
+
+  &__label {
+    display: block;
+    font-size: 12px;
+    color: $muted;
+    margin-bottom: $spacing-xs;
+  }
+
+  &__input {
+    width: 100%;
+    background: $surface;
+    border: 1px solid $border;
+    border-radius: $radius-md;
+    color: $text;
+    font-family: $font-body;
+    font-size: 14px;
+    padding: $spacing-sm $spacing-md;
+    outline: none;
+    transition: border-color $transition;
+
+    &:focus { border-color: $amber-dim; }
+    &::placeholder { color: $muted; }
+  }
+
+  textarea#{&}__input {
+    resize: vertical;
+    min-height: 80px;
+  }
+}
+
+// ── Photo upload ───────────────────────────────────────────────────────────────
+.photo-upload {
+  &__preview {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border-radius: $radius-md;
+    margin-bottom: $spacing-md;
+  }
+
+  &__placeholder {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: $surface;
+    border: 2px dashed $border;
+    border-radius: $radius-md;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-sm;
+    color: $muted;
+    font-size: 13px;
+    margin-bottom: $spacing-md;
+    cursor: pointer;
+    transition: border-color $transition;
+
+    &:hover { border-color: $amber-dim; }
+
+    .icon { font-size: 32px; }
+  }
+
+  &__input { display: none; }
+}
+
+// ── Ingredient / Step rows édition ─────────────────────────────────────────────
+.edit-row {
+  display: flex;
+  gap: $spacing-sm;
+  align-items: flex-start;
+  margin-bottom: $spacing-sm;
+
+  &__inputs {
+    display: flex;
+    gap: $spacing-sm;
+    flex: 1;
+    flex-wrap: wrap;
+  }
+
+  &__name  { flex: 2; min-width: 120px; }
+  &__qty   { flex: 1; min-width: 70px; }
+  &__unit  { flex: 1; min-width: 70px; }
+  &__notes { flex: 1; min-width: 80px; }
+
+  &__remove {
+    width: 32px;
+    height: 38px;
+    border: 1px solid $border;
+    border-radius: $radius-md;
+    color: $muted;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: border-color $transition, color $transition;
+
+    &:hover { border-color: $danger; color: #e57373; }
+  }
+}
+
+.btn-add {
+  width: 100%;
+  border: 1px dashed $border;
+  border-radius: $radius-md;
+  padding: $spacing-sm;
+  color: $muted;
+  font-size: 13px;
+  margin-top: $spacing-xs;
+  transition: border-color $transition, color $transition;
+
+  &:hover { border-color: $amber-dim; color: $amber; }
+}
+
+// ── Responsive ─────────────────────────────────────────────────────────────────
+@media (max-width: 768px) {
+  .page-header__title { font-size: 26px; }
+
+  .recipes-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .detail {
+    max-width: 100%;
+
+    &__macros {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .edit-page {
+    &__grid { grid-template-columns: 1fr; }
+    &__full { grid-column: 1; }
+  }
+
+  .import-page { max-width: 100%; }
+
+  .navbar {
+    transform: translateX(-100%);
+    transition: transform $transition-layout, width $transition-layout;
+
+    &--open {
+      transform: translateX(0);
+      width: $navbar-width !important;
+
+      .navbar__logo-text,
+      .navbar__label,
+      .navbar__btn-label,
+      .navbar__count { display: block !important; }
+
+      .navbar__btn { justify-content: flex-start !important; padding: 10px $spacing-sm !important; }
+    }
+  }
+
+  .mobile-menu-btn {
+    display: flex;
+    position: fixed;
+    top: $spacing-md;
+    left: $spacing-md;
+    z-index: 60;
+    width: 40px; height: 40px;
+    background: $surface;
+    border: 1px solid $border;
+    border-radius: $radius-md;
+    align-items: center; justify-content: center;
+    font-size: 18px;
+    color: $text;
+  }
+
+  .main { padding-top: 64px; }
+}
+
+@media (min-width: 769px) {
+  .mobile-menu-btn { display: none; }
+}
+
+@keyframes spin     { to { transform: rotate(360deg); } }
+@keyframes slideUp  { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }

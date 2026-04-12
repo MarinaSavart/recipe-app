@@ -1,0 +1,65 @@
+// ── Thèmes ─────────────────────────────────────────────────────────────────────
+:root {
+  --bg:         #0f0e0d;
+  --surface:    #181614;
+  --card:       #201e1b;
+  --border:     #2e2a25;
+  --amber:      #e88c3a;
+  --amber-dim:  #a05f1a;
+  --amber-glow: rgba(232, 140, 58, 0.15);
+  --text:       #f0ebe3;
+  --muted:      #7a726a;
+  --danger:     #c0392b;
+}
+
+[data-theme="light"] {
+  --bg:         #f5f0eb;
+  --surface:    #ffffff;
+  --card:       #fdf9f6;
+  --border:     #e0d8d0;
+  --amber:      #c46f1a;
+  --amber-dim:  #a05f1a;
+  --amber-glow: rgba(196, 111, 26, 0.1);
+  --text:       #1a1714;
+  --muted:      #8a7e74;
+  --danger:     #c0392b;
+}
+
+// ── Variables SCSS (pointent sur les CSS vars) ──────────────────────────────────
+$bg:          var(--bg);
+$surface:     var(--surface);
+$card:        var(--card);
+$border:      var(--border);
+$amber:       var(--amber);
+$amber-dim:   var(--amber-dim);
+$amber-glow:  var(--amber-glow);
+$text:        var(--text);
+$muted:       var(--muted);
+$danger:      var(--danger);
+
+// ── Typographie ────────────────────────────────────────────────────────────────
+$font-body:    'DM Sans', sans-serif;
+$font-display: 'Playfair Display', serif;
+
+// ── Espacements ────────────────────────────────────────────────────────────────
+$spacing-xs:  4px;
+$spacing-sm:  8px;
+$spacing-md:  16px;
+$spacing-lg:  24px;
+$spacing-xl:  32px;
+$spacing-2xl: 48px;
+
+// ── Bordures ───────────────────────────────────────────────────────────────────
+$radius-sm:   6px;
+$radius-md:   10px;
+$radius-lg:   14px;
+$radius-xl:   16px;
+$radius-full: 9999px;
+
+// ── Transitions ────────────────────────────────────────────────────────────────
+$transition:        0.15s ease;
+$transition-layout: 0.25s ease;
+
+// ── Layout ─────────────────────────────────────────────────────────────────────
+$navbar-width:           260px;
+$navbar-width-collapsed: 64px;

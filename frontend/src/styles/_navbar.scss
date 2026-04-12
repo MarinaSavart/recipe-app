@@ -1,0 +1,148 @@
+@use 'variables' as *;
+
+.navbar {
+  background: $surface;
+  border-right: 1px solid $border;
+  display: flex;
+  flex-direction: column;
+  padding: $spacing-2xl 0 $spacing-xl;
+  position: fixed;
+  top: 0; left: 0;
+  height: 100vh;
+  width: $navbar-width;
+  z-index: 50;
+  transition: width $transition-layout;
+  overflow: hidden;
+
+  &--collapsed {
+    width: $navbar-width-collapsed;
+
+    .navbar__logo-text,
+    .navbar__label,
+    .navbar__btn-label,
+    .navbar__count { display: none; }
+
+    .navbar__btn { justify-content: center; padding: 10px; }
+    .navbar__logo { justify-content: center; padding: 0 0 $spacing-xl; }
+  }
+
+  &__toggle {
+    position: absolute;
+    top: $spacing-md;
+    right: $spacing-xs;
+    width: 28px; height: 28px;
+    border-radius: $radius-sm;
+    border: 1px solid $border;
+    color: $muted;
+    font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    transition: color $transition, border-color $transition;
+    flex-shrink: 0;
+
+    &:hover { color: $text; border-color: $amber-dim; }
+  }
+
+  &__logo{
+    padding: 0 $spacing-lg $spacing-xl;
+    font-family: $font-display;
+    font-size: 20px;
+    font-weight: 700;
+    color: $amber;
+    letter-spacing: -0.3px;
+    border-bottom: 1px solid $border;
+    margin-bottom: $spacing-lg;
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    white-space: nowrap;
+    padding-right: 40px; // espace pour le toggle
+
+    &-icon { font-size: 22px; flex-shrink: 0; }
+
+    &-text {
+      span { color: $text; font-style: italic; }
+    }
+  }
+
+
+  &__section {
+    padding: 0 $spacing-sm;
+    margin-bottom: $spacing-sm;
+  }
+
+  &__label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    color: $muted;
+    text-transform: uppercase;
+    padding: 0 $spacing-sm;
+    margin-bottom: $spacing-xs;
+    white-space: nowrap;
+  }
+
+  &__btn {
+    width: 100%;
+    text-align: left;
+    padding: 10px $spacing-sm;
+    border-radius: $radius-md;
+    color: $text;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background $transition, color $transition;
+    white-space: nowrap;
+
+    &:hover { background: $card; }
+
+    &--active { background: $amber-glow; color: $amber; }
+
+    .icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+  }
+
+  &__btn-label { flex: 1; }
+
+  &__theme-btn {
+    width: 100%;
+    text-align: left;
+    padding: 10px $spacing-sm;
+    border-radius: $radius-md;
+    color: $muted;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background $transition, color $transition;
+    white-space: nowrap;
+    margin-top: auto;
+    border-top: 1px solid $border;
+    padding-top: $spacing-md;
+
+    &:hover { color: $text; }
+
+    .icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+  }
+
+  &__count {
+    background: $border;
+    font-size: 11px;
+    padding: 1px 7px;
+    border-radius: $radius-full;
+    color: $muted;
+    flex-shrink: 0;
+  }
+}
+
+// Overlay mobile
+.navbar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.6);
+  z-index: 40;
+
+  @media (max-width: 768px) {
+    &--visible { display: block; }
+  }
+}
