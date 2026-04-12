@@ -1,75 +1,128 @@
-# React + TypeScript + Vite
+# 🍽️ Mise en Bouche — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Interface web construite avec **React** + **TypeScript** + **Vite** pour gérer sa banque de recettes personnelle.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Stack
 
-## React Compiler
+- **React 19** + **TypeScript**
+- **Vite** — bundler
+- **React Router v6** — navigation
+- **SCSS** — styles maison
+- **React Compiler** — optimisations automatiques
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+---
 
-Note: This will impact Vite dev & build performances.
+## Prérequis
 
-## Expanding the ESLint configuration
+- Node.js 18+
+- Le backend lancé sur `http://localhost:8000`
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+---
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Installation
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### 1. Place-toi dans le dossier frontend
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+cd frontend
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 2. Installe les dépendances
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+```bash
+npm install
+```
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### 3. Configure les variables d'environnement
+
+```bash
+cp .env.example .env
+```
+
+Le `.env` par défaut pointe sur le backend local :
+
+```env
+VITE_API_URL=http://localhost:8000
+```
+
+### 4. Lance le serveur de développement
+
+```bash
+npm run dev
+```
+
+L'app est disponible sur [http://localhost:5173](http://localhost:5173)
+
+---
+
+## Pages
+
+| Route | Description |
+|-------|-------------|
+| `/` | Liste de toutes les recettes |
+| `/import` | Import depuis URL ou description manuelle |
+| `/recipes/:id` | Détail d'une recette |
+| `/recipes/:id/edit` | Édition d'une recette |
+
+---
+
+## Structure
+```
+frontend/
+├── src/
+│   ├── pages/
+│   │   ├── RecipeList.tsx       # Page d'accueil — grille de recettes
+│   │   ├── RecipeDetail.tsx     # Page détail avec sélecteur de portions
+│   │   ├── RecipeImport.tsx     # Import URL / manuel
+│   │   └── RecipeEdit.tsx       # Édition + upload photo
+│   ├── components/
+│   │   ├── Navbar.tsx           # Navigation latérale rétractable
+│   │   ├── RecipeCard.tsx       # Carte recette
+│   │   └── MacroBox.tsx         # Boîte macro (kcal, protéines...)
+│   ├── services/
+│   │   └── api.ts               # Toutes les fonctions fetch
+│   ├── styles/
+│   │   ├── _variables.scss      # Couleurs, typo, espacements
+│   │   ├── _reset.scss          # Reset CSS
+│   │   ├── _navbar.scss
+│   │   ├── _cards.scss
+│   │   ├── _pages.scss
+│   │   └── main.scss
+│   ├── types/
+│   │   └── recipe.ts            # Interfaces TypeScript
+│   └── main.tsx                 # Point d'entrée + routing
+├── .env.example
+└── vite.config.ts
+```
+---
+
+## Fonctionnalités
+
+- 📥 Import automatique depuis une URL Instagram ou TikTok
+- ✍️ Import manuel en collant la description
+- 🔢 Sélecteur de portions — adapte les quantités en temps réel
+- ✏️ Édition complète d'une recette
+- 📷 Upload de photo personnalisée
+- ☀️🌙 Mode clair / sombre persisté
+- 📱 Responsive mobile
+- 🗂️ Navbar rétractable
+
+---
+
+## Démarrage rapide (backend + frontend)
+
+```bash
+# Terminal 1 — Backend
+cd backend
+venv\Scripts\activate       # Windows
+uvicorn app.main:app --reload
+
+# Terminal 2 — Ollama
+ollama run mistral
+
+# Terminal 3 — Frontend
+cd frontend
+npm run dev
 ```
