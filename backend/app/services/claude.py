@@ -5,7 +5,7 @@ import httpx
 from app.schemas.recipe import IngredientCreate, RecipeCreate, StepCreate
 
 # Ollama tourne en local sur ce port par défaut
-OLLAMA_URL = "http://localhost:11434/api/generate"
+OLLAMA_URL = "http://host.docker.internal:11434/api/generate"
 OLLAMA_MODEL = "mistral"
 
 # ── Prompt système ─────────────────────────────────────────────────────────────
