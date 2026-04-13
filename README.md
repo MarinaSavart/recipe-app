@@ -6,13 +6,12 @@ Application web personnelle pour centraliser ses recettes importées depuis Inst
 
 ## Prérequis
 
-Avant de commencer, installe ces deux outils :
+Installe ces outils avant de commencer :
 
-**1. Docker Desktop**
-Télécharge et installe [Docker Desktop](https://www.docker.com/products/docker-desktop/) puis lance-le.
-
-**2. Ollama + Mistral**
-Télécharge et installe [Ollama](https://ollama.com/download), puis télécharge le modèle Mistral :
+- [Python 3.12+](https://python.org) — en cochant "Add to PATH"
+- [Node.js 20+](https://nodejs.org)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) — pour PostgreSQL
+- [Ollama](https://ollama.com/download) — puis lance :
 
 ```bash
 ollama pull mistral
@@ -20,34 +19,74 @@ ollama pull mistral
 
 ---
 
+## Installation (première fois)
+
+### 1. Clone le repo
+
+```bash
+git clone <url-du-repo>
+cd recipe-app
+```
+
+### 2. Backend
+
+```bash
+cd backend
+python -m venv venv
+
+# Windows
+venv\Scripts\activate
+# Mac / Linux
+source venv/bin/activate
+
+pip install -r requirements.txt
+cp .env.example .env
+cd ..
+```
+
+### 3. Frontend
+
+```bash
+cd frontend
+npm install
+cp .env.example .env
+cd ..
+```
+
+---
+
 ## Démarrage
 
-### Première fois
+Lance chaque commande dans un terminal séparé :
 
+**Terminal 1 — Base de données**
 ```bash
-docker-compose up --build
+cd backend
+docker-compose up -d
 ```
 
-### Les fois suivantes
-
+**Terminal 2 — Backend**
 ```bash
-# Terminal 1 — Lance Ollama
+# Windows
+cd backend
+venv\Scripts\activate
+uvicorn app.main:app --reload
+
+# Mac / Linux
+cd backend
+source venv/bin/activate
+uvicorn app.main:app --reload
+```
+
+**Terminal 3 — Ollama**
+```bash
 ollama run mistral
-
-# Terminal 2 — Lance l'app
-docker-compose up
 ```
 
-### Arrêter
-
+**Terminal 4 — Frontend**
 ```bash
-docker-compose down
-```
-
-### Arrêter et supprimer les données
-
-```bash
-docker-compose down -v
+cd frontend
+npm run dev
 ```
 
 ---
