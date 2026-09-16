@@ -43,13 +43,6 @@ RÈGLES INGREDIENTS :
 - Ingrédients comptables sans unité (1 oeuf, 2 carottes) : quantity="1", unit=null
 - quantity est TOUJOURS une string
 - Traduis TOUT en français
-- Ramène TOUTES les quantités à 1 portion en divisant par le nombre de portions total
-  Cette règle s'applique à TOUS les ingrédients sans exception, y compris les cas, cac, ml, g, kg...
-  Exemple : si la recette est pour 4 portions et qu'il faut 800g de poulet, mets quantity="200"
-  Exemple : si la recette est pour 3 portions et qu'il faut 1 oeuf, mets quantity="0.33"
-  Exemple : si la recette est pour 3 portions, et qu'il faut 1 cas paprika → quantity="0.33"
-  Exemple : si la recette est pour 3 portions, et qu'il faut 2 cas sauce soja → quantity="0.67"
-  Ne jamais laisser une quantité non divisée si la recette est pour plusieurs portions.
 
 
 RÈGLES ÉTAPES :
