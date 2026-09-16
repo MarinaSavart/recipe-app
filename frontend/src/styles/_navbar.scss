@@ -26,11 +26,21 @@
     .navbar__logo { justify-content: center; padding: 0 0 $spacing-xl; }
   }
 
-  &__toggle {
+  &__container-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0px 12px;
+    height: auto;
+    width: 100%;
     position: absolute;
     top: $spacing-md;
     right: $spacing-xs;
-    width: 28px; height: 28px;
+  }
+
+  &__toggle {
+    width: 28px; 
+    height: 28px;
     border-radius: $radius-sm;
     border: 1px solid $border;
     color: $muted;
@@ -43,7 +53,7 @@
   }
 
   &__logo{
-    padding: 0 $spacing-lg $spacing-xl;
+    padding: $spacing-md $spacing-lg $spacing-xl;
     font-family: $font-display;
     font-size: 20px;
     font-weight: 700;
