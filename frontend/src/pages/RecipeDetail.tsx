@@ -64,12 +64,13 @@ export default function RecipeDetail() {
 
   const totalTime = (recipe.prep_time_minutes ?? 0) + (recipe.cook_time_minutes ?? 0)
 
-  function formatQty(qty: string | null, multiplier: number): string | null {
-    if (!qty) return null
-    const num = parseFloat(qty)
-    if (isNaN(num)) return qty
-    const result = num * multiplier
-    // Arrondi à l'entier le plus proche pour les valeurs proches d'un entier (±0.05)
+  function formatQty(quantity: string | null, multiplier: number, servings: number): string | null {
+    if (!quantity) return null
+    const num = parseFloat(quantity)
+    if (isNaN(num)) return quantity
+    // quantité de base = pour `servings` portions
+    // on adapte au nombre de portions choisi
+    const result = (num / servings) * multiplier
     const rounded = Math.abs(result - Math.round(result)) < 0.05
       ? Math.round(result)
       : parseFloat(result.toFixed(1))
@@ -199,7 +200,7 @@ export default function RecipeDetail() {
               </span>
               {(ing.quantity || ing.unit) && (
                 <span className="ingredient-row__qty">
-                  {[formatQty(ing.quantity, portions), ing.unit].filter(Boolean).join(' ')}
+                  {[formatQty(ing.quantity, portions, recipe.servings ?? 1), ing.unit].filter(Boolean).join(' ')}
                 </span>
               )}
             </div>
