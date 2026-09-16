@@ -8,6 +8,8 @@ from app.database import engine, Base
 from app.models import recipe as recipe_models  # noqa: F401 — import nécessaire pour que Base "voit" les modèles
 from app.routers.recipes import router as recipes_router
 
+from app.routers.auth import router as auth_router
+from app.models import user as user_models  # noqa: F401
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -42,7 +44,7 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # ── Routers ────────────────────────────────────────────────────────────────────
 app.include_router(recipes_router)
-
+app.include_router(auth_router)
 
 # ── Health check ───────────────────────────────────────────────────────────────
 @app.get("/health")
