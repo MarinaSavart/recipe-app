@@ -1,4 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 
 interface NavItem {
   icon: string
@@ -23,6 +24,7 @@ interface NavbarProps {
 export default function Navbar({ recipeCount, collapsed, onToggle, mobileOpen, theme, onThemeToggle }: NavbarProps) {
   const navigate = useNavigate()
   const location = useLocation()
+  const { user, logout } = useAuth()
 
   return (
     <>
@@ -56,6 +58,19 @@ export default function Navbar({ recipeCount, collapsed, onToggle, mobileOpen, t
             </button>
           ))}
         </div>
+
+        {user && (
+          <div className="navbar__section" style={{ marginTop: 'auto' }}>
+            <div className="navbar__label">Compte</div>
+            <div style={{ padding: '0 12px 8px', fontSize: 13, color: 'var(--muted)' }}>
+              {user.name ?? user.email}
+            </div>
+            <button className="navbar__btn" onClick={logout}>
+              <span className="icon">🚪</span>
+              <span className="navbar__btn-label">Déconnexion</span>
+            </button>
+          </div>
+        )}
 
         {/* Toggle thème en bas de la navbar */}
         <button

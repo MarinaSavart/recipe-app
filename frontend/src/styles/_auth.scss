@@ -1,0 +1,130 @@
+@use 'variables' as *;
+
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: $bg;
+  padding: $spacing-lg;
+
+  &__card {
+    background: $surface;
+    border: 1px solid $border;
+    border-radius: $radius-xl;
+    padding: $spacing-2xl;
+    width: 100%;
+    max-width: 420px;
+  }
+
+  &__logo {
+    font-family: $font-display;
+    font-size: 24px;
+    font-weight: 700;
+    color: $amber;
+    text-align: center;
+    margin-bottom: $spacing-xl;
+
+    span { color: $text; font-style: italic; }
+  }
+
+  &__title {
+    font-family: $font-display;
+    font-size: 26px;
+    font-weight: 700;
+    margin-bottom: $spacing-xs;
+  }
+
+  &__sub {
+    color: $muted;
+    font-size: 14px;
+    margin-bottom: $spacing-xl;
+  }
+
+  &__field {
+    margin-bottom: $spacing-md;
+
+    label {
+      display: block;
+      font-size: 12px;
+      color: $muted;
+      margin-bottom: $spacing-xs;
+    }
+
+    input {
+      width: 100%;
+      background: $card;
+      border: 1px solid $border;
+      border-radius: $radius-md;
+      color: $text;
+      font-family: $font-body;
+      font-size: 14px;
+      padding: $spacing-sm $spacing-md;
+      outline: none;
+      transition: border-color $transition;
+
+      &:focus { border-color: $amber-dim; }
+      &::placeholder { color: $muted; }
+    }
+  }
+
+  &__submit {
+    width: 100%;
+    background: $amber;
+    color: #0f0e0d;
+    border: none;
+    border-radius: $radius-md;
+    padding: 12px;
+    font-family: $font-body;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: $spacing-lg;
+    transition: opacity $transition;
+
+    &:hover { opacity: 0.9; }
+    &:disabled { opacity: 0.4; cursor: not-allowed; }
+  }
+
+  &__divider {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    margin: $spacing-lg 0;
+    color: $muted;
+    font-size: 12px;
+
+    &::before, &::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: $border;
+    }
+  }
+
+  &__link {
+    text-align: center;
+    font-size: 13px;
+    color: $muted;
+    margin-top: $spacing-lg;
+
+    button {
+      color: $amber;
+      background: none;
+      border: none;
+      font-size: 13px;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+  }
+
+  &__error {
+    background: rgba(192, 57, 43, 0.1);
+    border: 1px solid $danger;
+    border-radius: $radius-md;
+    padding: $spacing-sm $spacing-md;
+    font-size: 13px;
+    color: #e57373;
+    margin-bottom: $spacing-md;
+  }
+}
