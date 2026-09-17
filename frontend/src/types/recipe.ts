@@ -34,9 +34,9 @@ export interface Recipe {
   prep_time_minutes: number | null
   cook_time_minutes: number | null
   calories: number | null
-  proteins_g: number | null
-  carbs_g: number | null
-  fats_g: number | null
+  proteinsG: number | null
+  carbsG: number | null
+  fatsG: number | null
   ingredients: Ingredient[]
   steps: Step[]
   tags: Tag[]
@@ -53,8 +53,8 @@ export interface RecipeListItem {
   thumbnail_url: string | null
   servings: number | null
   calories: number | null
-  proteins_g: number | null
-  carbs_g: number | null
-  fats_g: number | null
+  proteinsG: number | null
+  carbsG: number | null
+  fatsG: number | null
   created_at: string
 }
