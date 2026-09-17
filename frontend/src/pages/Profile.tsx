@@ -44,16 +44,23 @@ const ACTIVITE_PRO = [
 
 // Multiplicateurs TDEE selon activité pro + sport
 function getActivityMultiplier(activite_pro: string, seances_sport: number): number {
-  
+  // Multiplicateurs basés sur l'activité professionnelle uniquement (NEAT)
+  // Source : Harris-Benedict / Mifflin-St Jeor standards
   const base: Record<string, number> = {
-    sedentaire: 1.2,
-    leger:      1.375,
-    actif:      1.55,
-    tres_actif: 1.725,
+    sedentaire: 1.2,    // bureau, peu de déplacements
+    leger:      1.375,  // debout une partie de la journée
+    actif:      1.55,   // travail physique modéré
+    tres_actif: 1.725,  // travail physique intense
   }
-  const sportBonus = seances_sport * 0.06
-  const maxSportBonus = 0.35 
-  return (base[activite_pro] ?? 1.2) + Math.min(sportBonus, maxSportBonus)
+
+  // Sport bonus : ~300-500 kcal par séance d'1h, ramenés en multiplicateur sur le BMR
+  // Une séance/semaine = +300 kcal/jour ÷ 7 = ~43 kcal/jour
+  // Sur un BMR moyen de 1500 kcal → +0.028 par séance
+  // On plafonne à 6 séances max (au-delà = très actif déjà pris en compte)
+  const sportBonus = Math.min(seances_sport, 6) * 0.025
+  // Max +0.15 → cohérent avec la plage totale des multiplicateurs
+
+  return (base[activite_pro] ?? 1.2) + sportBonus
 }
 
 // ── Calcul TDEE ────────────────────────────────────────────────────────────────
@@ -266,7 +273,7 @@ export default function Profile() {
                 }}
                 style={{ fontSize: 11, color: 'var(--amber)', background: 'none', border: 'none', cursor: 'pointer' }}
               >
-                {showMassGrasse ? '− Retirer' : '+ Ajouter'}
+                {showMassGrasse ? '- Retirer' : '+ Ajouter'}
               </button>
             </label>
             {showMassGrasse ? (
@@ -308,7 +315,7 @@ export default function Profile() {
           </div>
         </div>
         <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: '16px', marginTop: '-8px' }}>
-          💡 Basé sur une moyenne de 60 min par séance
+          💡 Basé sur une moyenne de 60 min par séance. Le TDEE réel peut varier selon l'intensité et la durée.
         </div>
 
         {/* Bouton calculer */}
