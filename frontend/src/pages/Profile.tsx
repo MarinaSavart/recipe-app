@@ -18,8 +18,11 @@ export default function Profile() {
   const [savedMetrics, setSavedMetrics] = useState(false)
   const [savedGoals, setSavedGoals] = useState(false)
 
+  const metricsKey = `personal_metrics_${user?.id}`
+  const goalsKey = `nutritional_goals_${user?.id}`
+
   const [metrics, setMetrics] = useState<PersonalMetrics>(() => {
-    const stored = localStorage.getItem('personal_metrics')
+    const stored = localStorage.getItem(metricsKey)
     if (!stored) return DEFAULT_METRICS
 
     try {
@@ -41,7 +44,7 @@ export default function Profile() {
   })
 
   const [goals, setGoals] = useState<NutritionalGoals>(() => {
-    const stored = localStorage.getItem('nutritional_goals')
+    const stored = localStorage.getItem(goalsKey)
     if (!stored) return DEFAULT_GOALS
 
     try {
@@ -101,13 +104,13 @@ export default function Profile() {
   }
 
   function handleSaveMetrics() {
-    localStorage.setItem('personal_metrics', JSON.stringify(metrics))
+    localStorage.setItem(metricsKey, JSON.stringify(metrics))
     setSavedMetrics(true)
     setTimeout(() => setSavedMetrics(false), 2000)
   }
 
   function handleSaveGoals() {
-    localStorage.setItem('nutritional_goals', JSON.stringify(goals))
+    localStorage.setItem(goalsKey, JSON.stringify(goals))
     setSavedGoals(true)
     setTimeout(() => setSavedGoals(false), 2000)
   }
