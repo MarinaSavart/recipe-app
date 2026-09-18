@@ -21,28 +21,71 @@ export default function Profile() {
 
   const [metrics, setMetrics] = useState<PersonalMetrics>(() => {
     const stored = localStorage.getItem('personal_metrics')
-    return stored ? JSON.parse(stored) : DEFAULT_METRICS
+    if (!stored) return DEFAULT_METRICS
+    
+    const parsed = JSON.parse(stored)
+    
+    // Migration : ancien format → nouveau format
+    return {
+      gender: parsed.gender ?? parsed.sexe ?? '',
+      age: parsed.age ?? 0,
+      weight: parsed.weight ?? parsed.poids ?? 0,
+      height: parsed.height ?? parsed.taille ?? 0,
+      bodyFatPercent: parsed.bodyFatPercent ?? parsed.masse_grasse ?? null,
+      workActivity: parsed.workActivity ?? parsed.workactivity ?? parsed.activite_pro ?? 'sedentaire',
+      weeklySessions: parsed.weeklySessions ?? parsed.seances_sport ?? 3,  // ← le fix du NaN
+    }
   })
 
   const [goals, setGoals] = useState<NutritionalGoals>(() => {
     const stored = localStorage.getItem('nutritional_goals')
-    return stored ? JSON.parse(stored) : DEFAULT_GOALS
+    if (!stored) return DEFAULT_GOALS
+
+    const parsed = JSON.parse(stored)
+
+    // Migration : ancien format → nouveau format
+    return {
+      goal: parsed.goal ?? parsed.regime ?? 'maintenance',
+      mealsPerDay: parsed.mealsPerDay ?? parsed.meals_per_day ?? 3,
+      calories: parsed.calories ?? 2000,
+      proteinsG: parsed.proteinsG ?? parsed.proteins_g ?? 150,
+      carbsG: parsed.carbsG ?? parsed.carbs_g ?? 220,
+      fatsG: parsed.fatsG ?? parsed.fats_g ?? 65,
+    }
   })
 
   useEffect(() => {
     getRecipes().then(setRecipes).catch(console.error)
   }, [])
 
-  // Recalcul auto quand métriques ou régime changent
-  useEffect(() => {
-    if (goals.goal === 'personnalise') return
-    const tdee = calculateTDEE(metrics)
-    if (!tdee || !metrics.weight) return
-    const macros = calculateMacros(tdee, goals.goal, metrics.weight)
-    setGoals(g => ({ ...g, ...macros }))
-  }, [metrics, goals.goal])
-
   const tdee = calculateTDEE(metrics)
+
+  function handleMetricsChange(nextMetrics: PersonalMetrics) {
+    setMetrics(nextMetrics)
+
+    if (goals.goal === 'personnalise') return
+    const nextTdee = calculateTDEE(nextMetrics)
+    if (!nextTdee || !nextMetrics.weight) return
+
+    const macros = calculateMacros(nextTdee, goals.goal, nextMetrics.weight)
+    setGoals(g => ({ ...g, ...macros }))
+  }
+
+  function handleGoalsChange(nextGoals: NutritionalGoals) {
+    if (nextGoals.goal === 'personnalise') {
+      setGoals(nextGoals)
+      return
+    }
+
+    const nextTdee = calculateTDEE(metrics)
+    if (!nextTdee || !metrics.weight) {
+      setGoals(nextGoals)
+      return
+    }
+
+    const macros = calculateMacros(nextTdee, nextGoals.goal, metrics.weight)
+    setGoals({ ...nextGoals, ...macros })
+  }
 
   function handleRecalculate() {
     if (!tdee || !metrics.weight) return
@@ -72,7 +115,7 @@ export default function Profile() {
 
       <MetricsSection
         metrics={metrics}
-        onChange={setMetrics}
+        onChange={handleMetricsChange}
         tdee={tdee}
         onRecalculate={handleRecalculate}
         isPersonnalise={goals.goal === 'personnalise'}
@@ -82,7 +125,7 @@ export default function Profile() {
 
       <GoalsSection
         goals={goals}
-        onChange={setGoals}
+        onChange={handleGoalsChange}
         saved={savedGoals}
         onSave={handleSaveGoals}
       />
