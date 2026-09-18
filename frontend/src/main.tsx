@@ -8,6 +8,7 @@ import RecipeList from './pages/RecipeList'
 import RecipeDetail from './pages/RecipeDetail'
 import RecipeImport from './pages/RecipeImport'
 import RecipeEdit from './pages/RecipeEdit'
+import FavoritesRecipes from './pages/FavoritesRecipes'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import './styles/main.scss'
@@ -70,6 +71,7 @@ function AppLayout() {
             <Route path="/recipes/:id"      element={<RecipeDetail />} />
             <Route path="/recipes/:id/edit" element={<RecipeEdit />} />
             <Route path="/import"           element={<RecipeImport />} />
+            <Route path="/favorites"        element={<FavoritesRecipes />} />
             <Route path="/profile"           element={<Profile />} />
           </Routes>
         </main>
