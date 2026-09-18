@@ -10,6 +10,7 @@ import GoalsSection from '../components/GoalsSection'
 import type { RecipeListItem } from '../types/recipe'
 import { DEFAULT_GOALS, DEFAULT_METRICS, type NutritionalGoals, type PersonalMetrics } from '../types/profil'
 
+/** Profile page: personal metrics, nutritional goals, and a recap of the user's recipes/favorites. */
 export default function Profile() {
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -29,7 +30,7 @@ export default function Profile() {
     try {
       const parsed = JSON.parse(stored)
 
-      // Migration : ancien format → nouveau format
+      // Migration: old format → new format
       return {
         gender: parsed.gender ?? parsed.sexe ?? '',
         age: parsed.age ?? 0,
@@ -37,7 +38,7 @@ export default function Profile() {
         height: parsed.height ?? parsed.taille ?? 0,
         bodyFatPercent: parsed.bodyFatPercent ?? parsed.masse_grasse ?? null,
         workActivity: parsed.workActivity ?? parsed.workactivity ?? parsed.activite_pro ?? 'sedentaire',
-        weeklySessions: parsed.weeklySessions ?? parsed.weeklysessions ?? parsed.seances_sport ?? 3,  // ← le fix du NaN
+        weeklySessions: parsed.weeklySessions ?? parsed.weeklysessions ?? parsed.seances_sport ?? 3,  // ← the NaN fix
       }
     } catch {
       return DEFAULT_METRICS
@@ -51,7 +52,7 @@ export default function Profile() {
     try {
       const parsed = JSON.parse(stored)
 
-      // Migration : ancien format → nouveau format
+      // Migration: old format → new format
       return {
         goal: parsed.goal ?? parsed.regime ?? 'maintenance',
         mealsPerDay: parsed.mealsPerDay ?? parsed.meals_per_day ?? 3,
@@ -72,6 +73,7 @@ export default function Profile() {
 
   const tdee = calculateTDEE(metrics)
 
+  /** Updates the metrics and, unless goals are customized, recalculates goals from the new TDEE. */
   function handleMetricsChange(nextMetrics: PersonalMetrics) {
     setMetrics(nextMetrics)
 
@@ -83,6 +85,7 @@ export default function Profile() {
     setGoals(g => ({ ...g, ...macros }))
   }
 
+  /** Applies a goals change, recomputing macros from the current TDEE unless the goal is customized. */
   function handleGoalsChange(nextGoals: NutritionalGoals) {
     if (nextGoals.goal === 'personnalise') {
       setGoals(nextGoals)
@@ -99,18 +102,21 @@ export default function Profile() {
     setGoals({ ...nextGoals, ...macros })
   }
 
+  /** Recomputes macro targets from the current TDEE and goal. */
   function handleRecalculate() {
     if (!tdee || !metrics.weight) return
     const macros = calculateMacros(tdee, goals.goal, metrics.weight)
     setGoals(g => ({ ...g, ...macros }))
   }
 
+  /** Persists the metrics to localStorage and briefly shows a saved confirmation. */
   function handleSaveMetrics() {
     localStorage.setItem(metricsKey, JSON.stringify(metrics))
     setSavedMetrics(true)
     setTimeout(() => setSavedMetrics(false), 2000)
   }
 
+  /** Persists the goals to localStorage and briefly shows a saved confirmation. */
   function handleSaveGoals() {
     localStorage.setItem(goalsKey, JSON.stringify(goals))
     setSavedGoals(true)
@@ -142,7 +148,7 @@ export default function Profile() {
         onSave={handleSaveGoals}
       />
 
-      {/* Carousel — Recettes */}
+      {/* Carousel — Recipes */}
       <div className="profile__section">
         <div className="profile__section-title">Mes recettes importées</div>
         {recipes.length === 0 ? (
@@ -175,7 +181,7 @@ export default function Profile() {
         )}
       </div>
 
-      {/* Carousel — Favoris */}
+      {/* Carousel — Favorites */}
       <div className="profile__section">
         <div className="profile__section-title">Mes favoris</div>
         {likedRecipes.length === 0 ? (

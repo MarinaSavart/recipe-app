@@ -5,6 +5,7 @@ import { getRecipe, deleteRecipe, likeRecipe, unlikeRecipe } from '../services/a
 import type { Recipe } from '../types/recipe'
 import { formatQty, platformLabel, resolveMediaUrl } from '../utils/recipeDisplay'
 
+/** Full recipe view: details, macros, portions selector, ingredients, steps, and actions. */
 export default function RecipeDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -25,6 +26,7 @@ export default function RecipeDetail() {
       .finally(() => setLoading(false))
   }, [id])
 
+  /** Toggles the like state optimistically, reverting it on request failure. */
   function handleLikeToggle() {
     if (!recipe) return
     const wasLiked = recipe.isLiked
@@ -44,6 +46,7 @@ export default function RecipeDetail() {
     })
   }
 
+  /** Confirms and deletes the recipe, then navigates back to the recipe list. */
   async function handleDelete() {
     if (!recipe) return
     if (!confirm(`Supprimer "${recipe.title}" ?`)) return
@@ -79,7 +82,7 @@ export default function RecipeDetail() {
   return (
     <div className="detail">
 
-      {/* Retour */}
+      {/* Back */}
       <button className="detail__back" onClick={() => navigate('/')}>
         ← Retour aux recettes
       </button>
@@ -146,7 +149,7 @@ export default function RecipeDetail() {
         </div>
       )}
 
-    {/* Sélecteur de portions */}
+    {/* Portions selector */}
     {recipe.servings && (
       <div className="detail__section">
         <div className="detail__section-title">Portion{portions > 1 ? 's' : ''}</div>
@@ -176,7 +179,7 @@ export default function RecipeDetail() {
       </div>
     )}
 
-    {/* Infos temps */}
+    {/* Time info */}
     {totalTime > 0 && (
       <div className="detail__section">
         <div className="detail__section-title">Infos</div>
@@ -188,7 +191,7 @@ export default function RecipeDetail() {
       </div>
     )}
 
-      {/* Ingrédients */}
+      {/* Ingredients */}
       {recipe.ingredients.length > 0 && (
         <div className="detail__section">
           <div className="detail__section-title">Ingrédients</div>
@@ -210,7 +213,7 @@ export default function RecipeDetail() {
         </div>
       )}
 
-      {/* Étapes */}
+      {/* Steps */}
       {recipe.steps.length > 0 && (
         <div className="detail__section">
           <div className="detail__section-title">Préparation</div>

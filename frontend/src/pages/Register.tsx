@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { register as registerRequest } from '../services/api'
 
+/** Registration page: creates a new account and logs the user in on success. */
 export default function Register() {
   const navigate = useNavigate()
   const { login } = useAuth()
@@ -14,6 +15,7 @@ export default function Register() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  /** Validates the form, submits the registration, and redirects on success. */
   async function handleRegister() {
     if (!name || !email || !password) return
     if (password !== confirm) {

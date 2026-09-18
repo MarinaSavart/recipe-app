@@ -11,10 +11,12 @@ interface RecipeCardProps {
   onLikeToggle: (id: number) => void
 }
 
+/** Clickable recipe preview card with a thumbnail, macros, and a like toggle. */
 export default function RecipeCard({ recipe, isLiked, onLikeToggle }: RecipeCardProps) {
   const navigate = useNavigate()
   const [liked, setLiked] = useState(isLiked)
 
+  /** Toggles the like state optimistically, reverting on failure. */
   function handleLikeClick(e: MouseEvent) {
     e.stopPropagation()
     const wasLiked = liked

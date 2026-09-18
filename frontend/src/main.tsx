@@ -16,12 +16,13 @@ import Profile from './pages/Profile'
 
 type Theme = 'dark' | 'light'
 
-// Protège les routes — redirige vers /login si non connecté
+/** Guards routes — redirects to /login when the user isn't logged in. */
 function PrivateRoute({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   return user ? <>{children}</> : <Navigate to="/login" replace />
 }
 
+/** Main authenticated layout: navbar, mobile menu, theme toggle, and routed pages. */
 function AppLayout() {
   const [recipeCount, setRecipeCount] = useState(0)
   const [favoritesCount, setFavoritesCount] = useState(0)
@@ -82,16 +83,17 @@ function AppLayout() {
   )
 }
 
+/** Application root: sets up routing between public pages and the private layout. */
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          {/* Routes publiques */}
+          {/* Public routes */}
           <Route path="/login"    element={<Login />} />
           <Route path="/register" element={<Register />} />
 
-          {/* Routes protégées */}
+          {/* Protected routes */}
           <Route path="/*" element={
             <PrivateRoute>
               <AppLayout />

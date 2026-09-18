@@ -1,8 +1,9 @@
-// Correspond exactement aux schemas Pydantic du backend
-// Le mélange snake_case / camelCase ci-dessous est volontaire : ces interfaces
-// représentent le JSON brut échangé avec l'API (donc calqué sur les schémas
-// Pydantic), pas des objets internes au frontend.
+// Matches the backend's Pydantic schemas exactly.
+// The snake_case / camelCase mix below is intentional: these interfaces
+// represent the raw JSON exchanged with the API (so they mirror the
+// Pydantic schemas), not internal frontend objects.
 
+/** A single recipe ingredient, as returned by the API. */
 export interface Ingredient {
     id: number;
     name: string;
@@ -12,6 +13,7 @@ export interface Ingredient {
     position: number;
 }
 
+/** A single recipe step, as returned by the API. */
 export interface Step {
     id: number;
     content: string;
@@ -19,12 +21,13 @@ export interface Step {
     duration_minutes: number | null;
 }
 
+/** A recipe tag, as returned by the API. */
 export interface Tag {
     id: number;
     name: string;
 }
 
-// Version complète — utilisée sur la page détail
+/** Full recipe shape — used on the detail page. */
 export interface Recipe {
   id: number
   title: string
@@ -49,7 +52,7 @@ export interface Recipe {
   updated_at: string
 }
 
-// Version allégée — utilisée sur la page liste (RecipeListItem du backend)
+/** Lightweight recipe shape — used on the list page (backend's RecipeListItem). */
 export interface RecipeListItem {
   id: number
   title: string
@@ -66,7 +69,7 @@ export interface RecipeListItem {
   created_at: string
 }
 
-// Payload PATCH /recipes/:id — mêmes clés que Recipe, toutes optionnelles
+/** PATCH /recipes/:id payload — same keys as Recipe, all optional. */
 export interface UpdateRecipePayload {
   title: string
   description: string | null

@@ -8,6 +8,7 @@ interface RecipeListProps {
   onCountChange: (count: number) => void
 }
 
+/** Displays all recipes visible to the current user as a grid of cards. */
 export default function RecipeList({ onCountChange }: RecipeListProps) {
   const [recipes, setRecipes] = useState<RecipeListItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -24,6 +25,7 @@ export default function RecipeList({ onCountChange }: RecipeListProps) {
       .finally(() => setLoading(false))
   }, [])
 
+  /** Toggles a recipe's liked state in the local list. */
   function handleLikeToggle(id: number) {
     setRecipes(prev => prev.map(r => r.id === id ? { ...r, isLiked: !r.isLiked } : r))
   }

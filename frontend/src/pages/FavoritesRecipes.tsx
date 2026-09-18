@@ -8,6 +8,7 @@ interface FavoritesRecipesProps {
   onCountChange: (count: number) => void
 }
 
+/** Displays the current user's liked recipes as a grid of cards. */
 export default function FavoritesRecipes({ onCountChange }: FavoritesRecipesProps) {
   const [recipes, setRecipes] = useState<RecipeListItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -24,6 +25,7 @@ export default function FavoritesRecipes({ onCountChange }: FavoritesRecipesProp
       .finally(() => setLoading(false))
   }, [])
 
+  /** Removes a recipe from the list as soon as it's unliked. */
   function handleLikeToggle(id: number) {
     const next = recipes.filter(r => r.id !== id)
     setRecipes(next)

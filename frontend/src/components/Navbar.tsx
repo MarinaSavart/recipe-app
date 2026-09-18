@@ -24,6 +24,7 @@ interface NavbarProps {
   onThemeToggle: () => void
 }
 
+/** Sidebar navigation: main nav links, theme toggle, collapse toggle, and account section. */
 export default function Navbar({ recipeCount, favoritesCount, collapsed, onToggle, mobileOpen, theme, onThemeToggle }: NavbarProps) {
   const navigate = useNavigate()
   const location = useLocation()
@@ -34,7 +35,7 @@ export default function Navbar({ recipeCount, favoritesCount, collapsed, onToggl
       <nav className={`navbar ${collapsed ? 'navbar--collapsed' : ''} ${mobileOpen ? 'navbar--open' : ''}`}>
 
         <div className="navbar__container-toggle">
-          {/* Toggle thème en bas de la navbar */}
+          {/* Theme toggle at the bottom of the navbar */}
           <button
             className="navbar__toggle"
             onClick={onThemeToggle}
@@ -47,7 +48,7 @@ export default function Navbar({ recipeCount, favoritesCount, collapsed, onToggl
           </button>
         </div>
 
-        {/* Logo de la navbar */}
+        {/* Navbar logo */}
         <div className="navbar__logo" onClick={() => navigate('/')}>
           <span className="navbar__logo-icon">🍽️</span>
           <span className="navbar__logo-text">

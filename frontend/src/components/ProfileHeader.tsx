@@ -4,6 +4,7 @@ interface ProfileHeaderProps {
   avatarUrl: string | null
 }
 
+/** Displays the user's avatar (or initial), name, and email at the top of the profile page. */
 export default function ProfileHeader({ name, email, avatarUrl }: ProfileHeaderProps) {
   return (
     <div className="profile__header">

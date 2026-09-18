@@ -8,6 +8,7 @@ interface GoalsSectionProps {
   onSave: () => void
 }
 
+/** Lets the user pick a nutritional goal preset and edit daily macro targets. */
 export default function GoalsSection({ goals, onChange, saved, onSave }: GoalsSectionProps) {
   const perMeal = {
     calories: Math.round(goals.calories / goals.mealsPerDay),
@@ -16,6 +17,7 @@ export default function GoalsSection({ goals, onChange, saved, onSave }: GoalsSe
     fatsG: Math.round(goals.fatsG / goals.mealsPerDay),
   }
 
+  /** Merges a partial change into the current goals and notifies the parent. */
   function update(patch: Partial<NutritionalGoals>) {
     onChange({ ...goals, ...patch })
   }
@@ -24,7 +26,7 @@ export default function GoalsSection({ goals, onChange, saved, onSave }: GoalsSe
     <div className="profile__section">
       <div className="profile__section-title">Objectifs nutritionnels</div>
 
-      {/* Régimes */}
+      {/* Goal presets */}
       <div className="profile__regimes">
         {GOALS.map(r => (
           <button
@@ -37,7 +39,7 @@ export default function GoalsSection({ goals, onChange, saved, onSave }: GoalsSe
         ))}
       </div>
 
-      {/* Macros journalières */}
+      {/* Daily macros */}
       <div className="profile__goals-grid">
         <div className="profile__goal-field">
           <label>Calories / jour (kcal)</label>
@@ -73,7 +75,7 @@ export default function GoalsSection({ goals, onChange, saved, onSave }: GoalsSe
         </div>
       </div>
 
-      {/* Repas par jour */}
+      {/* Meals per day */}
       <div className="profile__repas-selector">
         <label>Repas par jour</label>
         <div className="portions-selector">
@@ -93,7 +95,7 @@ export default function GoalsSection({ goals, onChange, saved, onSave }: GoalsSe
         </div>
       </div>
 
-      {/* Macros par repas */}
+      {/* Macros per meal */}
       <div className="profile__per-meal">
         <div className="profile__per-meal-title">
           Objectif par repas ({goals.mealsPerDay} repas/jour)

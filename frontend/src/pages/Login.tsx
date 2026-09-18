@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { login as loginRequest } from '../services/api'
 
+/** Login page: authenticates the user and stores the resulting session. */
 export default function Login() {
   const navigate = useNavigate()
   const { login } = useAuth()
@@ -12,6 +13,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  /** Submits the credentials and redirects to the home page on success. */
   async function handleLogin() {
     if (!email || !password) return
     setLoading(true)

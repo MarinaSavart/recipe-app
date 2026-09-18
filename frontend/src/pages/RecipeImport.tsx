@@ -9,6 +9,7 @@ interface Toast {
   type: ToastType
 }
 
+/** Recipe import page: automatic import from a URL, or manual import from a pasted description. */
 export default function RecipeImport() {
   const navigate = useNavigate()
 
@@ -23,11 +24,13 @@ export default function RecipeImport() {
 
   const [toast, setToast] = useState<Toast | null>(null)
 
+  /** Shows a transient toast notification. */
   function showToast(msg: string, type: ToastType = 'success') {
     setToast({ msg, type })
     setTimeout(() => setToast(null), 3500)
   }
 
+  /** Submits the URL for automatic import and navigates to the created recipe. */
   async function handleImportUrl() {
     if (!url.trim()) return
     setLoadingUrl(true)
@@ -42,6 +45,7 @@ export default function RecipeImport() {
     }
   }
 
+  /** Submits the pasted description for manual import and navigates to the created recipe. */
   async function handleImportManual() {
     if (!description.trim()) return
     setLoadingManual(true)

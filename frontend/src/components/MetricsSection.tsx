@@ -11,6 +11,7 @@ interface MetricsSectionProps {
   onSave: () => void
 }
 
+/** Lets the user edit their personal metrics and view/recalculate their estimated TDEE. */
 export default function MetricsSection({
   metrics,
   onChange,
@@ -22,6 +23,7 @@ export default function MetricsSection({
 }: MetricsSectionProps) {
   const [showMassGrasse, setShowMassGrasse] = useState(metrics.bodyFatPercent !== null)
 
+  /** Merges a partial change into the current metrics and notifies the parent. */
   function update(patch: Partial<PersonalMetrics>) {
     onChange({ ...metrics, ...patch })
   }
@@ -43,7 +45,7 @@ export default function MetricsSection({
         ))}
       </div>
 
-      {/* Champs numériques */}
+      {/* Numeric fields */}
       <div className="profile__goals-grid">
         <div className="profile__goal-field">
           <label>Âge</label>
@@ -98,7 +100,7 @@ export default function MetricsSection({
         </div>
       </div>
 
-      {/* Activité pro */}
+      {/* Work activity */}
       <div className="profile__field-group">
         <div className="profile__field-label">
           Activité professionnelle
@@ -117,7 +119,7 @@ export default function MetricsSection({
         </div>
       </div>
 
-      {/* Séances sport */}
+      {/* Sport sessions */}
       <div className="profile__repas-selector">
         <label>Séances de sport / semaine</label>
         <div className="portions-selector">

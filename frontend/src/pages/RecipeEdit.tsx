@@ -11,6 +11,7 @@ interface EditStep extends Omit<Step, 'id'> { id?: number }
 type EditIngredientTextField = Exclude<keyof EditIngredient, 'id' | 'position'>
 type EditStepTextField = Exclude<keyof EditStep, 'id' | 'position'>
 
+/** Recipe edit form: general info, macros, photo, ingredients, and steps. */
 export default function RecipeEdit() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -20,7 +21,7 @@ export default function RecipeEdit() {
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
 
-  // Champs simples
+  // Simple fields
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [servings, setServings] = useState('')
@@ -32,7 +33,7 @@ export default function RecipeEdit() {
   const [fats, setFats] = useState('')
   const [tagsInput, setTagsInput] = useState('')
 
-  // Listes
+  // Lists
   const [ingredients, setIngredients] = useState<EditIngredient[]>([])
   const [steps, setSteps] = useState<EditStep[]>([])
 
@@ -41,6 +42,7 @@ export default function RecipeEdit() {
   const [photoFile, setPhotoFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  /** Shows a transient toast notification. */
   function showToast(msg: string, type: 'success' | 'error' = 'success') {
     setToast({ msg, type })
     setTimeout(() => setToast(null), 3500)
@@ -73,6 +75,7 @@ export default function RecipeEdit() {
 
   // ── Photo ──────────────────────────────────────────────────────────────────
 
+  /** Stores the selected photo file and generates a local preview URL for it. */
   function handlePhotoChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -80,14 +83,16 @@ export default function RecipeEdit() {
     setPhotoPreview(URL.createObjectURL(file))
   }
 
-  // ── Ingrédients ────────────────────────────────────────────────────────────
+  // ── Ingredients ────────────────────────────────────────────────────────────
 
+  /** Updates a single field of the ingredient at the given index. */
   function updateIngredient(index: number, field: EditIngredientTextField, value: string) {
     setIngredients(prev => prev.map((ing, i) =>
       i === index ? { ...ing, [field]: value || null } : ing
     ))
   }
 
+  /** Appends a new empty ingredient row. */
   function addIngredient() {
     setIngredients(prev => [...prev, {
       name: '', quantity: null, unit: null, notes: null,
@@ -95,13 +100,15 @@ export default function RecipeEdit() {
     }])
   }
 
+  /** Removes the ingredient at the given index and re-numbers the remaining positions. */
   function removeIngredient(index: number) {
     setIngredients(prev => prev.filter((_, i) => i !== index)
       .map((ing, i) => ({ ...ing, position: i })))
   }
 
-  // ── Étapes ─────────────────────────────────────────────────────────────────
+  // ── Steps ──────────────────────────────────────────────────────────────────
 
+  /** Updates a single field of the step at the given index. */
   function updateStep(index: number, field: EditStepTextField, value: string) {
     setSteps(prev => prev.map((step, i) =>
       i === index ? {
@@ -113,12 +120,14 @@ export default function RecipeEdit() {
     ))
   }
 
+  /** Appends a new empty step row. */
   function addStep() {
     setSteps(prev => [...prev, {
       content: '', position: prev.length, duration_minutes: null
     }])
   }
 
+  /** Removes the step at the given index and re-numbers the remaining positions. */
   function removeStep(index: number) {
     setSteps(prev => prev.filter((_, i) => i !== index)
       .map((step, i) => ({ ...step, position: i })))
@@ -126,16 +135,17 @@ export default function RecipeEdit() {
 
   // ── Save ───────────────────────────────────────────────────────────────────
 
+  /** Uploads the new photo (if any) and saves the recipe's fields, then navigates to the detail page. */
   async function handleSave() {
     if (!recipe || !title.trim()) return
     setSaving(true)
     try {
-      // 1. Upload photo si nouvelle
+      // 1. Upload photo if new
       if (photoFile) {
         await uploadPhoto(recipe.id, photoFile)
       }
 
-      // 2. Patch la recette
+      // 2. Patch the recipe
       await updateRecipe(recipe.id, {
         title: title.trim(),
         description: description || null,
@@ -217,7 +227,7 @@ export default function RecipeEdit() {
           </div>
         </div>
 
-        {/* Infos générales */}
+        {/* General info */}
         <div className="edit-section">
           <div className="edit-section__title">Informations générales</div>
           <div className="edit-page__grid">
@@ -292,7 +302,7 @@ export default function RecipeEdit() {
           </div>
         </div>
 
-        {/* Ingrédients */}
+        {/* Ingredients */}
         <div className="edit-section">
           <div className="edit-section__title">Ingrédients (quantités pour 1 portion)</div>
           {ingredients.map((ing, i) => (
@@ -329,7 +339,7 @@ export default function RecipeEdit() {
           <button className="btn-add" onClick={addIngredient}>+ Ajouter un ingrédient</button>
         </div>
 
-        {/* Étapes */}
+        {/* Steps */}
         <div className="edit-section">
           <div className="edit-section__title">Étapes</div>
           {steps.map((step, i) => (

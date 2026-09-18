@@ -1,5 +1,14 @@
 import type { NutritionalGoals, PersonalMetrics } from "../types/profil"
 
+/**
+ * Returns the activity multiplier used in the TDEE formula, combining
+ * the base multiplier for the work activity level with a bonus based
+ * on the number of weekly sport sessions.
+ *
+ * @param workActivity - Work activity level key (e.g. "sedentaire", "actif")
+ * @param weeklySessions - Number of sport sessions per week (capped at 14)
+ * @returns The multiplier to apply to the BMR
+ */
 export function getActivityMultiplier(workActivity: string, weeklySessions: number): number {
   const base: Record<string, number> = {
     sedentaire: 1.2,
@@ -11,6 +20,14 @@ export function getActivityMultiplier(workActivity: string, weeklySessions: numb
   return (base[workActivity] ?? 1.2) + sportBonus
 }
 
+/**
+ * Calculates the Total Daily Energy Expenditure (TDEE) from personal metrics.
+ * Uses the Katch-McArdle formula when body fat percentage is known,
+ * otherwise falls back to Mifflin-St Jeor.
+ *
+ * @param metrics - The user's personal metrics
+ * @returns The estimated TDEE in kcal/day, or null if required metrics are missing
+ */
 export function calculateTDEE(metrics: PersonalMetrics): number | null {
   if (!metrics.gender || !metrics.age || !metrics.weight || !metrics.height) return null
 
@@ -29,6 +46,14 @@ export function calculateTDEE(metrics: PersonalMetrics): number | null {
   return Math.round(bmr * getActivityMultiplier(metrics.workActivity, metrics.weeklySessions))
 }
 
+/**
+ * Computes daily calorie and macronutrient targets for a given goal.
+ *
+ * @param tdee - The user's Total Daily Energy Expenditure in kcal/day
+ * @param goal - The nutritional goal ("maintenance", "seche", "masse", or any other value for the default profile)
+ * @param weight - The user's weight in kg, used to scale protein/fat/carb targets
+ * @returns Daily calorie and macronutrient targets (calories, proteinsG, carbsG, fatsG)
+ */
 export function calculateMacros(
   tdee: number,
   goal: string,

@@ -1,3 +1,4 @@
+/** The user's personal body/activity metrics, used to estimate their TDEE. */
 export interface PersonalMetrics {
   gender: 'homme' | 'femme' | ''
   age: number
@@ -8,6 +9,7 @@ export interface PersonalMetrics {
   weeklySessions: number
 }
 
+/** The user's daily nutritional targets. */
 export interface NutritionalGoals {
   goal: string
   calories: number
@@ -17,6 +19,7 @@ export interface NutritionalGoals {
   mealsPerDay: number
 }
 
+/** Selectable nutritional goal presets, shown as buttons in the profile page. */
 export const GOALS = [
   { key: 'maintenance',  label: '⚖️ Maintenance' },
   { key: 'masse',        label: '💪 Prise de masse' },
@@ -24,6 +27,7 @@ export const GOALS = [
   { key: 'personnalise', label: '✏️ Personnalisé' },
 ]
 
+/** Selectable work activity level presets, used to estimate the TDEE multiplier. */
 export const WORK_ACTIVITIES = [
   { key: 'sedentaire', label: '🪑 Sédentaire',        desc: 'Bureau, peu de déplacements' },
   { key: 'leger',      label: '🚶 Légèrement actif',  desc: 'Debout une partie de la journée' },
@@ -31,16 +35,18 @@ export const WORK_ACTIVITIES = [
   { key: 'tres_actif', label: '⚡ Très actif',        desc: 'Travail physique intense' },
 ]
 
+/** Default personal metrics used before the user has filled in their profile. */
 export const DEFAULT_METRICS: PersonalMetrics = {
   gender: '',
   age: 0,
   weight: 0,
   height: 0,
   bodyFatPercent: null,
-  workActivity: 'sedentaire',  // ← idem
+  workActivity: 'sedentaire',
   weeklySessions: 3,
 }
 
+/** Default nutritional goals used before the user has saved their own. */
 export const DEFAULT_GOALS: NutritionalGoals = {
   goal: 'maintenance',
   mealsPerDay: 3,
