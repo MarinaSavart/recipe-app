@@ -3,13 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { getRecipes } from '../services/api'
 import { calculateTDEE, calculateMacros } from '../utils/nutritionCalc'
+import { resolveMediaUrl } from '../utils/recipeDisplay'
 import ProfileHeader from '../components/ProfileHeader'
 import MetricsSection from '../components/MetricsSection'
 import GoalsSection from '../components/GoalsSection'
 import type { RecipeListItem } from '../types/recipe'
 import { DEFAULT_GOALS, DEFAULT_METRICS, type NutritionalGoals, type PersonalMetrics } from '../types/profil'
-
-const API = import.meta.env.VITE_API_URL
 
 export default function Profile() {
   const { user } = useAuth()
@@ -22,18 +21,22 @@ export default function Profile() {
   const [metrics, setMetrics] = useState<PersonalMetrics>(() => {
     const stored = localStorage.getItem('personal_metrics')
     if (!stored) return DEFAULT_METRICS
-    
-    const parsed = JSON.parse(stored)
-    
-    // Migration : ancien format → nouveau format
-    return {
-      gender: parsed.gender ?? parsed.sexe ?? '',
-      age: parsed.age ?? 0,
-      weight: parsed.weight ?? parsed.poids ?? 0,
-      height: parsed.height ?? parsed.taille ?? 0,
-      bodyFatPercent: parsed.bodyFatPercent ?? parsed.masse_grasse ?? null,
-      workActivity: parsed.workActivity ?? parsed.workactivity ?? parsed.activite_pro ?? 'sedentaire',
-      weeklySessions: parsed.weeklySessions ?? parsed.weeklysessions ?? parsed.seances_sport ?? 3,  // ← le fix du NaN
+
+    try {
+      const parsed = JSON.parse(stored)
+
+      // Migration : ancien format → nouveau format
+      return {
+        gender: parsed.gender ?? parsed.sexe ?? '',
+        age: parsed.age ?? 0,
+        weight: parsed.weight ?? parsed.poids ?? 0,
+        height: parsed.height ?? parsed.taille ?? 0,
+        bodyFatPercent: parsed.bodyFatPercent ?? parsed.masse_grasse ?? null,
+        workActivity: parsed.workActivity ?? parsed.workactivity ?? parsed.activite_pro ?? 'sedentaire',
+        weeklySessions: parsed.weeklySessions ?? parsed.weeklysessions ?? parsed.seances_sport ?? 3,  // ← le fix du NaN
+      }
+    } catch {
+      return DEFAULT_METRICS
     }
   })
 
@@ -41,16 +44,20 @@ export default function Profile() {
     const stored = localStorage.getItem('nutritional_goals')
     if (!stored) return DEFAULT_GOALS
 
-    const parsed = JSON.parse(stored)
+    try {
+      const parsed = JSON.parse(stored)
 
-    // Migration : ancien format → nouveau format
-    return {
-      goal: parsed.goal ?? parsed.regime ?? 'maintenance',
-      mealsPerDay: parsed.mealsPerDay ?? parsed.meals_per_day ?? 3,
-      calories: parsed.calories ?? 2000,
-      proteinsG: parsed.proteinsG ?? parsed.proteins_g ?? 150,
-      carbsG: parsed.carbsG ?? parsed.carbs_g ?? 220,
-      fatsG: parsed.fatsG ?? parsed.fats_g ?? 65,
+      // Migration : ancien format → nouveau format
+      return {
+        goal: parsed.goal ?? parsed.regime ?? 'maintenance',
+        mealsPerDay: parsed.mealsPerDay ?? parsed.meals_per_day ?? 3,
+        calories: parsed.calories ?? 2000,
+        proteinsG: parsed.proteinsG ?? parsed.proteins_g ?? 150,
+        carbsG: parsed.carbsG ?? parsed.carbs_g ?? 220,
+        fatsG: parsed.fatsG ?? parsed.fats_g ?? 65,
+      }
+    } catch {
+      return DEFAULT_GOALS
     }
   })
 
@@ -145,11 +152,7 @@ export default function Profile() {
               >
                 {r.thumbnail_url ? (
                   <img
-                    src={
-                      r.thumbnail_url.startsWith('/uploads')
-                        ? `${API}${r.thumbnail_url}`
-                        : r.thumbnail_url
-                    }
+                    src={resolveMediaUrl(r.thumbnail_url)}
                     alt={r.title}
                   />
                 ) : (

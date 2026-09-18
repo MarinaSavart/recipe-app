@@ -1,4 +1,7 @@
 // Correspond exactement aux schemas Pydantic du backend
+// Le mélange snake_case / camelCase ci-dessous est volontaire : ces interfaces
+// représentent le JSON brut échangé avec l'API (donc calqué sur les schémas
+// Pydantic), pas des objets internes au frontend.
 
 export interface Ingredient {
     id: number;
@@ -57,4 +60,20 @@ export interface RecipeListItem {
   carbsG: number | null
   fatsG: number | null
   created_at: string
+}
+
+// Payload PATCH /recipes/:id — mêmes clés que Recipe, toutes optionnelles
+export interface UpdateRecipePayload {
+  title: string
+  description: string | null
+  servings: number | null
+  prep_time_minutes: number | null
+  cook_time_minutes: number | null
+  calories: number | null
+  proteinsG: number | null
+  carbsG: number | null
+  fatsG: number | null
+  ingredients: Omit<Ingredient, 'id'>[]
+  steps: Omit<Step, 'id'>[]
+  tags: string[]
 }

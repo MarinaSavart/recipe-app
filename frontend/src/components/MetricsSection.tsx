@@ -31,7 +31,7 @@ export default function MetricsSection({
       <div className="profile__section-title">Mes métriques</div>
 
       {/* Gender */}
-      <div className="profile__regimes" style={{ marginBottom: '16px' }}>
+      <div className="profile__regimes profile__regimes--tight">
         {(['homme', 'femme'] as const).map(s => (
           <button
             key={s}
@@ -73,14 +73,14 @@ export default function MetricsSection({
           />
         </div>
         <div className="profile__goal-field">
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <label className="profile__field-label-row">
             % Masse grasse
             <button
               onClick={() => {
                 setShowMassGrasse(v => !v)
                 update({ bodyFatPercent: null })
               }}
-              style={{ fontSize: 11, color: 'var(--amber)', background: 'none', border: 'none', cursor: 'pointer' }}
+              className="profile__toggle-link"
             >
               {showMassGrasse ? '− Retirer' : '+ Ajouter'}
             </button>
@@ -93,14 +93,14 @@ export default function MetricsSection({
               onChange={e => update({ bodyFatPercent: Number(e.target.value) || null })}
             />
           ) : (
-            <input disabled placeholder="Non renseigné" style={{ opacity: 0.4, cursor: 'not-allowed' }} />
+            <input disabled placeholder="Non renseigné" />
           )}
         </div>
       </div>
 
       {/* Activité pro */}
-      <div style={{ marginBottom: '16px' }}>
-        <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: '8px' }}>
+      <div className="profile__field-group">
+        <div className="profile__field-label">
           Activité professionnelle
         </div>
         <div className="profile__regimes">
@@ -136,38 +136,25 @@ export default function MetricsSection({
           </button>
         </div>
       </div>
-      <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: '16px', marginTop: '-8px' }}>
+      <div className="profile__hint">
         💡 Basé sur une moyenne de 60 min par séance. Le TDEE réel peut varier selon l'intensité.
       </div>
 
       {/* TDEE */}
       {tdee ? (
-        <div
-          style={{
-            background: 'var(--surface)',
-            borderRadius: '10px',
-            padding: '12px 16px',
-            marginBottom: '16px',
-            fontSize: 13,
-            color: 'var(--muted)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
+        <div className="profile__tdee-box profile__tdee-box--filled">
           <span>
             🔥 TDEE estimé :
-            <strong style={{ color: 'var(--amber)', marginLeft: '8px', fontSize: 16 }}>
+            <strong className="profile__tdee-value">
               {tdee} kcal / jour
             </strong>
-            <span style={{ fontSize: 11, marginLeft: '8px' }}>
+            <span className="profile__tdee-method">
               {metrics.bodyFatPercent ? '(Katch-McArdle)' : '(Mifflin-St Jeor)'}
             </span>
           </span>
           {!isPersonnalise && (
             <button
-              className="btn-primary"
-              style={{ padding: '8px 16px', fontSize: 13 }}
+              className="btn-primary btn-primary--sm"
               onClick={onRecalculate}
             >
               ↻ Recalculer
@@ -175,16 +162,7 @@ export default function MetricsSection({
           )}
         </div>
       ) : (
-        <div
-          style={{
-            background: 'var(--surface)',
-            borderRadius: '10px',
-            padding: '12px 16px',
-            marginBottom: '16px',
-            fontSize: 13,
-            color: 'var(--muted)',
-          }}
-        >
+        <div className="profile__tdee-box">
           💡 Remplis tes métriques pour obtenir un calcul automatique
         </div>
       )}

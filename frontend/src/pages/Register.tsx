@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-
-const API = import.meta.env.VITE_API_URL
+import { register as registerRequest } from '../services/api'
 
 export default function Register() {
   const navigate = useNavigate()
@@ -28,20 +27,11 @@ export default function Register() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`${API}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
-      })
-      if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.detail ?? "Erreur lors de l'inscription")
-      }
-      const data = await res.json()
+      const data = await registerRequest(name, email, password)
       login(data.access_token, data.user)
       navigate('/')
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Erreur lors de l'inscription")
     } finally {
       setLoading(false)
     }

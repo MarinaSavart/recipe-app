@@ -35,8 +35,8 @@ export default function RecipeImport() {
       const recipe = await importFromUrl(url.trim())
       showToast(`"${recipe.title}" importée !`)
       setTimeout(() => navigate(`/recipes/${recipe.id}`), 1000)
-    } catch (e: any) {
-      showToast(e.message, 'error')
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : 'Erreur inconnue', 'error')
     } finally {
       setLoadingUrl(false)
     }
@@ -49,8 +49,8 @@ export default function RecipeImport() {
       const recipe = await importManual(description.trim(), sourceUrl || undefined)
       showToast(`"${recipe.title}" importée !`)
       setTimeout(() => navigate(`/recipes/${recipe.id}`), 1000)
-    } catch (e: any) {
-      showToast(e.message, 'error')
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : 'Erreur inconnue', 'error')
     } finally {
       setLoadingManual(false)
     }
@@ -69,7 +69,7 @@ export default function RecipeImport() {
 
         {/* Import URL */}
         <div className="import-page__card">
-          <h2 style={{ fontFamily: 'var(--font-display)', marginBottom: '16px', fontSize: '18px' }}>
+          <h2 className="import-page__card-title">
             ⚡ Import automatique
           </h2>
           <label className="import-page__label">
@@ -101,7 +101,7 @@ export default function RecipeImport() {
 
         {/* Import manuel */}
         <div className="import-page__card">
-          <h2 style={{ fontFamily: 'var(--font-display)', marginBottom: '16px', fontSize: '18px' }}>
+          <h2 className="import-page__card-title">
             ✍️ Import manuel
           </h2>
           <label className="import-page__label">

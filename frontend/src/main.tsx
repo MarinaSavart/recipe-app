@@ -1,4 +1,5 @@
 import { StrictMode, useState, useEffect } from 'react'
+import type { ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
@@ -15,9 +16,8 @@ import Profile from './pages/Profile'
 type Theme = 'dark' | 'light'
 
 // Protège les routes — redirige vers /login si non connecté
-function PrivateRoute({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useAuth()
-  if (isLoading) return null
+function PrivateRoute({ children }: { children: ReactNode }) {
+  const { user } = useAuth()
   return user ? <>{children}</> : <Navigate to="/login" replace />
 }
 

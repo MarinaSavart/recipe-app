@@ -76,6 +76,8 @@
     gap: $spacing-sm;
     flex-wrap: wrap;
     margin-bottom: $spacing-lg;
+
+    &--tight { margin-bottom: $spacing-md; }
   }
 
   &__regime-btn {
@@ -131,7 +133,67 @@
       transition: border-color $transition;
 
       &:focus { border-color: $amber-dim; }
+      &:disabled { opacity: 0.4; cursor: not-allowed; }
     }
+  }
+
+  // ── Label de champ générique (hors goal-field) ─────────────────────────────
+  &__field-group {
+    margin-bottom: $spacing-md;
+  }
+
+  &__field-label {
+    font-size: 12px;
+    color: $muted;
+    margin-bottom: $spacing-sm;
+  }
+
+  &__field-label-row {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+
+  &__toggle-link {
+    font-size: 11px;
+    color: $amber;
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+
+  &__hint {
+    font-size: 11px;
+    color: $muted;
+    margin-bottom: $spacing-md;
+    margin-top: -8px;
+  }
+
+  // ── TDEE ────────────────────────────────────────────────────────────────────
+  &__tdee-box {
+    background: $surface;
+    border-radius: $radius-md;
+    padding: 12px $spacing-md;
+    margin-bottom: $spacing-md;
+    font-size: 13px;
+    color: $muted;
+
+    &--filled {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+  }
+
+  &__tdee-value {
+    color: $amber;
+    margin-left: $spacing-sm;
+    font-size: 16px;
+  }
+
+  &__tdee-method {
+    font-size: 11px;
+    margin-left: $spacing-sm;
   }
 
   &__repas-selector {

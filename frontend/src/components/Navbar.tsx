@@ -46,7 +46,7 @@ export default function Navbar({ recipeCount, collapsed, onToggle, mobileOpen, t
         </div>
 
         {/* Logo de la navbar */}
-        <div className="navbar__logo" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
+        <div className="navbar__logo" onClick={() => navigate('/')}>
           <span className="navbar__logo-icon">🍽️</span>
           <span className="navbar__logo-text">
             Mise en <span>Bouche</span>
@@ -72,9 +72,9 @@ export default function Navbar({ recipeCount, collapsed, onToggle, mobileOpen, t
         </div>
 
         {user && (
-          <div className="navbar__section" style={{ marginTop: 'auto' }}>
+          <div className="navbar__section navbar__section--bottom">
             <div className="navbar__label">Compte</div>
-            <div style={{ padding: '0 12px 8px', fontSize: 13, color: 'var(--muted)' }}>
+            <div className="navbar__user-email">
               {user.name ?? user.email}
             </div>
             <button className="navbar__theme-btn" onClick={logout}>

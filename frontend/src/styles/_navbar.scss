@@ -66,6 +66,7 @@
     gap: $spacing-sm;
     white-space: nowrap;
     padding-right: 40px; // espace pour le toggle
+    cursor: pointer;
 
     &-icon { font-size: 22px; flex-shrink: 0; }
 
@@ -78,6 +79,14 @@
   &__section {
     padding: 0 $spacing-sm;
     margin-bottom: $spacing-sm;
+
+    &--bottom { margin-top: auto; }
+  }
+
+  &__user-email {
+    padding: 0 12px $spacing-sm;
+    font-size: 13px;
+    color: $muted;
   }
 
   &__label {

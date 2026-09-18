@@ -1,21 +1,14 @@
 import { useNavigate } from 'react-router-dom'
 import type { RecipeListItem } from '../types/recipe'
+import { platformLabel, resolveMediaUrl } from '../utils/recipeDisplay'
 
 interface RecipeCardProps {
   recipe: RecipeListItem
 }
 
-function platformLabel(platform: string | null): string {
-  if (platform === 'instagram') return '📸 Instagram'
-  if (platform === 'tiktok') return '🎵 TikTok'
-  if (platform === 'manual') return '✍️ Manuel'
-  return platform ?? ''
-}
-
 export default function RecipeCard({ recipe }: RecipeCardProps) {
   const navigate = useNavigate()
-  const API = import.meta.env.VITE_API_URL
-  
+
   return (
     <div
       className="recipe-card"
@@ -24,10 +17,7 @@ export default function RecipeCard({ recipe }: RecipeCardProps) {
       {recipe.thumbnail_url ? (
         <img
           className="recipe-card__thumb"
-          src={recipe.thumbnail_url.startsWith('/uploads')
-            ? `${API}${recipe.thumbnail_url}`
-            : recipe.thumbnail_url
-          }
+          src={resolveMediaUrl(recipe.thumbnail_url)}
           alt={recipe.title}
           loading="lazy"
         />

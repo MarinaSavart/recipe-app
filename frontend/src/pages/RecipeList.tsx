@@ -55,8 +55,7 @@ export default function RecipeList({ onCountChange }: RecipeListProps) {
             <div className="empty__title">Aucune recette pour l'instant</div>
             <div className="empty__sub">
               <button
-                className="btn-ghost"
-                style={{ marginTop: '16px' }}
+                className="btn-ghost empty__cta"
                 onClick={() => navigate('/import')}
               >
                 ⚡ Importer ma première recette

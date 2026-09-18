@@ -1,6 +1,3 @@
-
-
-
 import { createContext, useContext, useState } from 'react'
 import type { ReactNode } from 'react'
 
@@ -16,25 +13,27 @@ interface AuthContextType {
   token: string | null
   login: (token: string, user: User) => void
   logout: () => void
-  isLoading: boolean
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session] = useState(() => {
-    const savedToken = localStorage.getItem('token')
-    const savedUser = localStorage.getItem('user')
+function readStoredSession(): { token: string | null; user: User | null } {
+  const savedToken = localStorage.getItem('token')
+  const savedUser = localStorage.getItem('user')
 
-    if (savedToken && savedUser) {
-      return { token: savedToken, user: JSON.parse(savedUser) as User }
-    }
+  if (!savedToken || !savedUser) return { token: null, user: null }
 
+  try {
+    return { token: savedToken, user: JSON.parse(savedUser) as User }
+  } catch {
     return { token: null, user: null }
-  })
+  }
+}
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [session] = useState(readStoredSession)
   const [user, setUser] = useState<User | null>(session.user)
   const [token, setToken] = useState<string | null>(session.token)
-  const isLoading = false
 
   function login(token: string, user: User) {
     setToken(token)
@@ -51,7 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, token, login, logout }}>
       {children}
     </AuthContext.Provider>
   )

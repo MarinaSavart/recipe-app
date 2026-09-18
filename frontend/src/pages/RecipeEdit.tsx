@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
+import type { ChangeEvent } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getRecipe, updateRecipe, uploadPhoto } from '../services/api'
 import type { Recipe, Ingredient, Step } from '../types/recipe'
-
-const API = 'http://localhost:8000'
+import { resolveMediaUrl } from '../utils/recipeDisplay'
 
 interface EditIngredient extends Omit<Ingredient, 'id'> { id?: number }
 interface EditStep extends Omit<Step, 'id'> { id?: number }
+
+type EditIngredientTextField = Exclude<keyof EditIngredient, 'id' | 'position'>
+type EditStepTextField = Exclude<keyof EditStep, 'id' | 'position'>
 
 export default function RecipeEdit() {
   const { id } = useParams<{ id: string }>()
@@ -61,11 +64,7 @@ export default function RecipeEdit() {
         setIngredients(data.ingredients)
         setSteps(data.steps)
         if (data.thumbnail_url) {
-          setPhotoPreview(
-            data.thumbnail_url.startsWith('/uploads')
-              ? `${API}${data.thumbnail_url}`
-              : data.thumbnail_url
-          )
+          setPhotoPreview(resolveMediaUrl(data.thumbnail_url))
         }
       })
       .catch((e) => showToast(e.message, 'error'))
@@ -74,7 +73,7 @@ export default function RecipeEdit() {
 
   // ── Photo ──────────────────────────────────────────────────────────────────
 
-  function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+  function handlePhotoChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
     setPhotoFile(file)
@@ -83,7 +82,7 @@ export default function RecipeEdit() {
 
   // ── Ingrédients ────────────────────────────────────────────────────────────
 
-  function updateIngredient(index: number, field: keyof EditIngredient, value: string) {
+  function updateIngredient(index: number, field: EditIngredientTextField, value: string) {
     setIngredients(prev => prev.map((ing, i) =>
       i === index ? { ...ing, [field]: value || null } : ing
     ))
@@ -103,7 +102,7 @@ export default function RecipeEdit() {
 
   // ── Étapes ─────────────────────────────────────────────────────────────────
 
-  function updateStep(index: number, field: keyof EditStep, value: string) {
+  function updateStep(index: number, field: EditStepTextField, value: string) {
     setSteps(prev => prev.map((step, i) =>
       i === index ? {
         ...step,
@@ -158,8 +157,8 @@ export default function RecipeEdit() {
 
       showToast('Recette sauvegardée !')
       setTimeout(() => navigate(`/recipes/${recipe.id}`), 1000)
-    } catch (e: any) {
-      showToast(e.message, 'error')
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : 'Erreur inconnue', 'error')
     } finally {
       setSaving(false)
     }
@@ -300,25 +299,25 @@ export default function RecipeEdit() {
             <div key={i} className="edit-row">
               <div className="edit-row__inputs">
                 <input
-                  className={`edit-field__input edit-row__name`}
+                  className="edit-field__input edit-row__name"
                   placeholder="Nom"
                   value={ing.name}
                   onChange={e => updateIngredient(i, 'name', e.target.value)}
                 />
                 <input
-                  className={`edit-field__input edit-row__qty`}
+                  className="edit-field__input edit-row__qty"
                   placeholder="Qté"
                   value={ing.quantity ?? ''}
                   onChange={e => updateIngredient(i, 'quantity', e.target.value)}
                 />
                 <input
-                  className={`edit-field__input edit-row__unit`}
+                  className="edit-field__input edit-row__unit"
                   placeholder="Unité"
                   value={ing.unit ?? ''}
                   onChange={e => updateIngredient(i, 'unit', e.target.value)}
                 />
                 <input
-                  className={`edit-field__input edit-row__notes`}
+                  className="edit-field__input edit-row__notes"
                   placeholder="Notes"
                   value={ing.notes ?? ''}
                   onChange={e => updateIngredient(i, 'notes', e.target.value)}
@@ -337,14 +336,14 @@ export default function RecipeEdit() {
             <div key={i} className="edit-row">
               <div className="edit-row__inputs">
                 <textarea
-                  className={`edit-field__input edit-row__name`}
+                  className="edit-field__input edit-row__name"
                   placeholder={`Étape ${i + 1}`}
                   value={step.content}
                   onChange={e => updateStep(i, 'content', e.target.value)}
                   rows={2}
                 />
                 <input
-                  className={`edit-field__input edit-row__qty`}
+                  className="edit-field__input edit-row__qty"
                   placeholder="Durée (min)"
                   type="number"
                   value={step.duration_minutes?.toString() ?? ''}
@@ -358,12 +357,11 @@ export default function RecipeEdit() {
         </div>
 
         {/* Actions */}
-        <div style={{ display: 'flex', gap: '12px', marginBottom: '48px' }}>
+        <div className="edit-page__actions">
           <button
-            className="btn-primary"
+            className="btn-primary edit-page__save-btn"
             onClick={handleSave}
             disabled={saving || !title.trim()}
-            style={{ flex: 1, padding: '14px' }}
           >
             {saving ? <><span className="spinner" />Sauvegarde…</> : '💾 Sauvegarder'}
           </button>

@@ -3,13 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import MacroBox from '../components/MacroBox'
 import { getRecipe, deleteRecipe } from '../services/api'
 import type { Recipe } from '../types/recipe'
-
-function platformLabel(platform: string | null): string {
-  if (platform === 'instagram') return '📸 Instagram'
-  if (platform === 'tiktok') return '🎵 TikTok'
-  if (platform === 'manual') return '✍️ Manuel'
-  return platform ?? ''
-}
+import { formatQty, platformLabel, resolveMediaUrl } from '../utils/recipeDisplay'
 
 export default function RecipeDetail() {
   const { id } = useParams<{ id: string }>()
@@ -19,7 +13,6 @@ export default function RecipeDetail() {
   const [error, setError] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [portions, setPortions] = useState<number>(1)
-  const API = import.meta.env.VITE_API_URL
 
   useEffect(() => {
     if (!id) return
@@ -39,8 +32,8 @@ export default function RecipeDetail() {
     try {
       await deleteRecipe(recipe.id)
       navigate('/')
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Erreur inconnue')
       setDeleting(false)
     }
   }
@@ -64,20 +57,6 @@ export default function RecipeDetail() {
 
   const totalTime = (recipe.prep_time_minutes ?? 0) + (recipe.cook_time_minutes ?? 0)
 
-  function formatQty(quantity: string | null, multiplier: number, servings: number): string | null {
-    if (!quantity) return null
-    const num = parseFloat(quantity)
-    if (isNaN(num)) return quantity
-    // quantité de base = pour `servings` portions
-    // on adapte au nombre de portions choisi
-    const result = (num / servings) * multiplier
-    const rounded = Math.abs(result - Math.round(result)) < 0.05
-      ? Math.round(result)
-      : parseFloat(result.toFixed(1))
-    return rounded.toString()
-  }
-
-
   return (
     <div className="detail">
 
@@ -90,10 +69,7 @@ export default function RecipeDetail() {
       {recipe.thumbnail_url ? (
         <img
           className="detail__thumb"
-          src={recipe.thumbnail_url.startsWith('/uploads')
-            ? `${API}${recipe.thumbnail_url}`
-            : recipe.thumbnail_url
-          }
+          src={resolveMediaUrl(recipe.thumbnail_url)}
           alt={recipe.title}
         />
       ) : (

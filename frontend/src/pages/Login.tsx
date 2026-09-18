@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-
-const API = import.meta.env.VITE_API_URL
+import { login as loginRequest } from '../services/api'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -18,20 +17,11 @@ export default function Login() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`${API}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      })
-      if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.detail ?? 'Erreur de connexion')
-      }
-      const data = await res.json()
+      const data = await loginRequest(email, password)
       login(data.access_token, data.user)
       navigate('/')
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Erreur de connexion')
     } finally {
       setLoading(false)
     }
