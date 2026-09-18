@@ -33,39 +33,39 @@ async def import_from_url(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Import automatique depuis une URL Instagram ou TikTok.
-    Étapes :
-      1. yt-dlp extrait la description et les métadonnées
-      2. Claude parse la description en recette structurée
-      3. On sauvegarde en base et on retourne la recette
+    Automatic import from an Instagram or TikTok URL.
+    Steps:
+      1. yt-dlp extracts the description and metadata
+      2. Claude parses the description into a structured recipe
+      3. We save it to the database and return the recipe
     """
-    # Étape 1 : extraction
+    # Step 1: extraction
     try:
         extracted = await extract_from_url(payload.url)
     except ValueError as e:
-        # Erreur attendue et déjà formulée pour l'utilisateur (ex: pas de description trouvée)
+        # Expected error, already phrased for the user (e.g. no description found)
         raise HTTPException(status_code=422, detail=str(e)) from e
     except Exception:
-        logger.exception("Extraction échouée pour l'URL %s", payload.url)
+        logger.exception("Extraction failed for URL %s", payload.url)
         raise HTTPException(
             status_code=422,
             detail="Extraction échouée. Vérifie l'URL ou utilise l'import manuel.",
         )
 
-    # Étape 2 : parsing Claude
+    # Step 2: Claude parsing
     try:
         recipe_data = await parse_recipe(
             extracted.description,
             suggested_title=extracted.title
         )
     except Exception:
-        logger.exception("Parsing de la recette échoué")
+        logger.exception("Recipe parsing failed")
         raise HTTPException(
             status_code=422,
             detail="Le parsing de la recette a échoué. Réessaie ou utilise l'import manuel.",
         )
 
-    # Étape 3 : sauvegarde
+    # Step 3: save
     recipe = await recipe_service.save_recipe(
         recipe_data,
         db,
@@ -88,8 +88,8 @@ async def import_manual(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Import manuel : l'utilisateur colle directement la description.
-    Utile quand yt-dlp échoue sur un compte privé.
+    Manual import: the user pastes the description directly.
+    Useful when yt-dlp fails on a private account.
     """
     description = payload.description.strip()
     if not description:
@@ -98,7 +98,7 @@ async def import_manual(
     try:
         recipe_data = await parse_recipe(description)
     except Exception:
-        logger.exception("Parsing de la recette échoué")
+        logger.exception("Recipe parsing failed")
         raise HTTPException(
             status_code=422,
             detail="Le parsing de la recette a échoué. Réessaie ou utilise l'import manuel.",
@@ -123,9 +123,9 @@ async def list_liked_recipes(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Recettes likées par l'utilisateur connecté, version allégée.
-    Triées de la plus récemment likée à la plus ancienne.
-    Déclarée avant /{recipe_id} pour éviter que "liked" soit interprété comme un id.
+    Recipes liked by the current user, lightweight version.
+    Sorted from most recently liked to oldest.
+    Declared before /{recipe_id} so "liked" isn't interpreted as an id.
     """
     recipes = await recipe_service.get_liked_recipes(current_user.id, db)
     await recipe_service.attach_like_metadata(recipes, db, current_user)
@@ -138,8 +138,8 @@ async def list_recipes(
     current_user: User | None = Depends(get_optional_user),
 ):
     """
-    Retourne toutes les recettes (visibles par tout utilisateur, connecté ou non),
-    version allégée (sans ingrédients/étapes). Triées de la plus récente à la plus ancienne.
+    Returns all recipes (visible to any user, logged in or not),
+    lightweight version (no ingredients/steps). Sorted from newest to oldest.
     """
     result = await db.execute(
         select(Recipe).order_by(Recipe.created_at.desc())
@@ -155,7 +155,7 @@ async def get_recipe(
     db: AsyncSession = Depends(get_db),
     current_user: User | None = Depends(get_optional_user),
 ):
-    """Retourne une recette complète avec ingrédients, étapes et tags (visible par tout utilisateur, connecté ou non)."""
+    """Returns a full recipe with ingredients, steps and tags (visible to any user, logged in or not)."""
     recipe = await recipe_service.get_or_404(recipe_id, db)
     await recipe_service.attach_like_metadata(recipe, db, current_user)
     return recipe
@@ -167,7 +167,7 @@ async def like_recipe(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Like une recette (idempotent : si déjà likée, ne fait rien et retourne 200)."""
+    """Likes a recipe (idempotent: if already liked, does nothing and returns 200)."""
     await recipe_service.get_or_404(recipe_id, db)
     await recipe_service.like_recipe(recipe_id, current_user.id, db)
     return {"status": "ok"}
@@ -179,7 +179,7 @@ async def unlike_recipe(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Unlike une recette. Lève une 404 si elle n'était pas likée."""
+    """Unlikes a recipe. Raises a 404 if it wasn't liked."""
     await recipe_service.unlike_recipe(recipe_id, current_user.id, db)
 
 
@@ -191,9 +191,8 @@ async def update_recipe(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Met à jour une recette (propriétaire uniquement). Seuls les champs envoyés
-    sont modifiés (PATCH). Pour les ingrédients/étapes/tags : remplacement
-    complet si fournis.
+    Updates a recipe (owner only). Only the fields sent are modified (PATCH).
+    For ingredients/steps/tags: fully replaced if provided.
     """
     recipe = await recipe_service.get_or_404(recipe_id, db)
     recipe_service.ensure_owner(recipe, current_user)
@@ -210,8 +209,8 @@ async def delete_recipe(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Supprime une recette (propriétaire uniquement) et tout ce qui lui est lié
-    (ingrédients/étapes/tags supprimés automatiquement par le cascade).
+    Deletes a recipe (owner only) and everything linked to it
+    (ingredients/steps/tags are automatically deleted via cascade).
     """
     recipe = await recipe_service.get_or_404(recipe_id, db)
     recipe_service.ensure_owner(recipe, current_user)
@@ -226,8 +225,8 @@ async def upload_photo(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Upload une photo pour une recette (propriétaire uniquement).
-    Stocke le fichier dans /uploads et met à jour thumbnail_url en base.
+    Uploads a photo for a recipe (owner only).
+    Stores the file in /uploads and updates thumbnail_url in the database.
     """
     recipe = await recipe_service.get_or_404(recipe_id, db)
     recipe_service.ensure_owner(recipe, current_user)

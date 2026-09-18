@@ -12,7 +12,7 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
-    hashed_password: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)  # null si Google OAuth
+    hashed_password: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)  # null if Google OAuth
     google_id: Mapped[Optional[str]] = mapped_column(String(255), unique=True, nullable=True)
     name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     avatar_url: Mapped[Optional[str]] = mapped_column(String(2048), nullable=True)

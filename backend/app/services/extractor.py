@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class ExtractedData:
-    """Données brutes extraites de la vidéo"""
+    """Raw data extracted from the video"""
     description: str
     title: Optional[str]
     author: Optional[str]
@@ -20,7 +20,7 @@ class ExtractedData:
 
 
 def _detect_platform(url: str) -> str:
-    """Détecte la plateforme depuis le domaine de l'URL"""
+    """Detects the platform from the URL's domain"""
     domain = urlparse(url).netloc.lower()
     if "instagram.com" in domain:
         return "instagram"
@@ -37,8 +37,8 @@ ALLOWED_DOMAINS = {
 
 def _validate_domain(url: str) -> None:
     """
-    Restreint l'extraction aux domaines Instagram/TikTok pour éviter qu'une URL
-    arbitraire ne fasse effectuer une requête serveur (SSRF) par yt-dlp.
+    Restricts extraction to Instagram/TikTok domains to prevent an arbitrary
+    URL from making yt-dlp perform a server-side request (SSRF).
     """
     parsed = urlparse(url)
     if parsed.hostname not in ALLOWED_DOMAINS:
@@ -59,13 +59,13 @@ BROWSERS = [
 
 def _extract_sync(url: str) -> dict:
     """
-    Essaie plusieurs navigateurs pour récupérer les cookies.
-    Utile pour Instagram / contenus nécessitant une session.
+    Tries several browsers to retrieve cookies.
+    Useful for Instagram / content that requires a session.
     """
     last_error = None
     for browser in BROWSERS:
         try:
-            logger.debug("Tentative avec cookies: %s", browser)
+            logger.debug("Attempting with cookies: %s", browser)
             ydl_opts = {
                 "quiet": True,
                 "no_warnings": True,
@@ -75,10 +75,10 @@ def _extract_sync(url: str) -> dict:
             }
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=False)
-            logger.debug("Succès avec cookies: %s", browser)
+            logger.debug("Success with cookies: %s", browser)
             return info
         except yt_dlp.utils.YoutubeDLError as e:
-            logger.debug("Échec avec cookies %s: %s", browser, e)
+            logger.debug("Failed with cookies %s: %s", browser, e)
             last_error = e
             continue
 
@@ -86,17 +86,17 @@ def _extract_sync(url: str) -> dict:
 
 async def extract_from_url(url: str) -> ExtractedData:
     """
-    Extrait les métadonnées d'un reel Instagram ou TikTok.
+    Extracts the metadata of an Instagram or TikTok reel.
 
-    On utilise run_in_executor pour exécuter le code synchrone yt-dlp
-    dans un thread séparé sans bloquer la boucle d'événements FastAPI.
+    We use run_in_executor to run the synchronous yt-dlp code
+    in a separate thread without blocking FastAPI's event loop.
     """
-    # url peut être un pydantic.HttpUrl (non compatible avec urlparse/yt-dlp) : on le
-    # normalise en str avant toute validation ou traitement.
+    # url can be a pydantic.HttpUrl (not compatible with urlparse/yt-dlp): we
+    # normalize it to str before any validation or processing.
     url = str(url)
 
-    # Validation du domaine AVANT tout appel à yt-dlp (et avant le chargement des
-    # cookies navigateur) pour empêcher un SSRF via une URL arbitraire.
+    # Domain validation BEFORE any call to yt-dlp (and before loading browser
+    # cookies) to prevent an SSRF via an arbitrary URL.
     _validate_domain(url)
 
     info = await asyncio.to_thread(_extract_sync, url)

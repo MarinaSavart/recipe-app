@@ -9,7 +9,7 @@ from app.models.recipe import Recipe
 
 UPLOADS_DIR = Path("uploads")
 
-# Extension dérivée du content-type validé, jamais du nom de fichier fourni par le client
+# Extension derived from the validated content-type, never from the client-supplied filename
 CONTENT_TYPE_EXTENSIONS = {
     "image/jpeg": "jpg",
     "image/png": "png",
@@ -21,9 +21,9 @@ MAX_PHOTO_SIZE_BYTES = 5 * 1024 * 1024
 
 async def save_recipe_photo(recipe: Recipe, file: UploadFile) -> str:
     """
-    Valide et stocke la photo uploadée pour une recette dans /uploads,
-    supprime l'ancienne photo locale si besoin, et retourne la nouvelle
-    valeur de thumbnail_url (ne persiste pas la recette — à la charge de l'appelant).
+    Validates and stores the uploaded photo for a recipe in /uploads,
+    deletes the old local photo if needed, and returns the new
+    thumbnail_url value (doesn't persist the recipe — the caller's responsibility).
     """
     if file.content_type not in CONTENT_TYPE_EXTENSIONS:
         raise HTTPException(
@@ -35,8 +35,8 @@ async def save_recipe_photo(recipe: Recipe, file: UploadFile) -> str:
     if len(contents) > MAX_PHOTO_SIZE_BYTES:
         raise HTTPException(status_code=422, detail="Image trop lourde (max 5MB)")
 
-    # Nom unique pour éviter les collisions ; extension basée sur le content-type validé,
-    # jamais sur le nom de fichier fourni par le client (non fiable / potentiel vecteur d'abus)
+    # Unique name to avoid collisions; extension based on the validated content-type,
+    # never on the client-supplied filename (unreliable / potential attack vector)
     ext = CONTENT_TYPE_EXTENSIONS[file.content_type]
     filename = f"{uuid.uuid4().hex}.{ext}"
     filepath = UPLOADS_DIR / filename

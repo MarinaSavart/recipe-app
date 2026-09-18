@@ -13,7 +13,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/register", response_model=TokenOut, status_code=status.HTTP_201_CREATED)
 async def register(payload: RegisterRequest, db: AsyncSession = Depends(get_db)):
-    # Vérifie si l'email existe déjà
+    # Check whether the email is already in use
     result = await db.execute(select(User).where(User.email == payload.email))
     if result.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Email déjà utilisé")

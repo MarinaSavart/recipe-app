@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.database import engine, Base
-from app.models import recipe as recipe_models  # noqa: F401 — import nécessaire pour que Base "voit" les modèles
+from app.models import recipe as recipe_models  # noqa: F401 — import needed so Base "sees" the models
 from app.routers.recipes import router as recipes_router
 
 from app.routers.auth import router as auth_router
@@ -14,13 +14,13 @@ from app.models import user as user_models  # noqa: F401
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
-    Code exécuté au démarrage et à l'arrêt du serveur.
-    On crée les tables SQL si elles n'existent pas encore.
+    Code executed on server startup and shutdown.
+    Creates the SQL tables if they don't exist yet.
     """
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield
-    # ici on pourrait ajouter du cleanup à l'arrêt (fermer des connexions, etc.)
+    # cleanup on shutdown could be added here (closing connections, etc.)
 
 
 app = FastAPI(
@@ -30,7 +30,7 @@ app = FastAPI(
 )
 
 # ── CORS ───────────────────────────────────────────────────────────────────────
-# Autorise le front (Vite sur :5173 ou CRA sur :3000) à appeler l'API
+# Allows the frontend (Vite on :5173 or CRA on :3000) to call the API
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "http://localhost:5173"],
@@ -39,7 +39,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Sert les images uploadées sur /uploads/nom-du-fichier.jpg
+# Serves uploaded images at /uploads/file-name.jpg
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # ── Routers ────────────────────────────────────────────────────────────────────
@@ -49,5 +49,5 @@ app.include_router(auth_router)
 # ── Health check ───────────────────────────────────────────────────────────────
 @app.get("/health")
 async def health():
-    """Endpoint simple pour vérifier que le serveur tourne."""
+    """Simple endpoint to check that the server is running."""
     return {"status": "ok"}

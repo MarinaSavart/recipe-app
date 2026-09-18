@@ -19,17 +19,17 @@ class ImportManualRequest(BaseModel):
 
 class IngredientBase(BaseModel):
     name: str
-    quantity: Optional[str] = None  # toujours une string : "600", "1/2"
-    unit: Optional[str] = None      # "g", "ml", "cas"...
-    notes: Optional[str] = None     # "allégé", "râpé"...
+    quantity: Optional[str] = None  # always a string: "600", "1/2"
+    unit: Optional[str] = None      # "g", "ml", "tbsp"...
+    notes: Optional[str] = None     # "low-fat", "grated"...
     position: int = 0
 
 class IngredientCreate(IngredientBase):
-    pass  # identique à Base pour l'instant, mais séparé pour évoluer facilement
+    pass  # identical to Base for now, but kept separate to evolve independently
 
 class IngredientOut(IngredientBase):
     id: int
-    model_config = {"from_attributes": True}  # permet de lire depuis un objet SQLAlchemy
+    model_config = {"from_attributes": True}  # allows reading from a SQLAlchemy object
 
 
 # ── Step ───────────────────────────────────────────────────────────────────────
@@ -73,14 +73,14 @@ class RecipeBase(BaseModel):
     fats_g: Optional[float] = None
 
 class RecipeCreate(RecipeBase):
-    # utilisé en interne pour créer une recette (après parsing Claude)
+    # used internally to create a recipe (after Claude parsing)
     ingredients: list[IngredientCreate] = []
     steps: list[StepCreate] = []
     tags: list[str] = []
     raw_description: Optional[str] = None
 
 class RecipeOut(RecipeBase):
-    # ce que l'API retourne — inclut les relations et les timestamps
+    # what the API returns — includes relationships and timestamps
     id: int
     ingredients: list[IngredientOut] = []
     steps: list[StepOut] = []
@@ -92,7 +92,7 @@ class RecipeOut(RecipeBase):
     model_config = {"from_attributes": True}
 
 class RecipeListItem(BaseModel):
-    # version allégée pour la liste — pas besoin de charger ingrédients/étapes
+    # lightweight version for the list view — no need to load ingredients/steps
     id: int
     title: str
     source_platform: Optional[str] = None
@@ -109,7 +109,7 @@ class RecipeListItem(BaseModel):
     model_config = {"from_attributes": True}
 
 class RecipeUpdate(BaseModel):
-    # tous les champs optionnels — on met à jour seulement ce qui est envoyé
+    # all fields optional — only what's sent gets updated
     title: Optional[str] = None
     description: Optional[str] = None
     servings: Optional[int] = None

@@ -13,7 +13,7 @@ class LoginRequest(BaseModel):
 
 
 class GoogleAuthRequest(BaseModel):
-    token: str  # le token Google renvoyé par le front
+    token: str  # the Google token returned by the frontend
 
 
 class UserOut(BaseModel):

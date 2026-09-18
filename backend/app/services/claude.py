@@ -4,11 +4,11 @@ import httpx
 
 from app.schemas.recipe import IngredientCreate, RecipeCreate, StepCreate
 
-# Ollama tourne en local sur ce port par défaut
+# Ollama runs locally on this port by default
 OLLAMA_URL = "http://localhost:11434/api/generate"
 OLLAMA_MODEL = "mistral"
 
-# ── Prompt système ─────────────────────────────────────────────────────────────
+# ── System prompt ──────────────────────────────────────────────────────────────
 SYSTEM_PROMPT = """
 Tu es un parseur de recettes de cuisine. Tu extrais les données d'une description et tu retournes UNIQUEMENT un objet JSON.
 
@@ -58,30 +58,30 @@ RÈGLES GÉNÉRALES :
 """.strip()
 
 
-# ── Fonction principale ────────────────────────────────────────────────────────
+# ── Main function ──────────────────────────────────────────────────────────────
 async def parse_recipe(raw_description: str, suggested_title: str | None = None) -> RecipeCreate:
     """
-    Envoie la description à Ollama (llama3.2 en local) et retourne
-    une RecipeCreate prête à être sauvegardée en base.
+    Sends the description to Ollama (llama3.2 locally) and returns
+    a RecipeCreate ready to be saved to the database.
     """
 
-    # On combine le prompt système et le contenu utilisateur en un seul prompt
-    # car Ollama en mode /api/generate n'a pas de system/user séparés
+    # We combine the system prompt and the user content into a single prompt
+    # because Ollama's /api/generate mode has no separate system/user roles
     user_content = raw_description
     if suggested_title:
         user_content = f"Titre de la video : {suggested_title}\n\n{raw_description}"
 
     full_prompt = f"{SYSTEM_PROMPT}\n\nVoici la description à parser :\n\n{user_content}"
 
-    # Appel à Ollama — stream:false pour attendre la réponse complète
+    # Call to Ollama — stream:false so we wait for the full response
     async with httpx.AsyncClient(timeout=120.0) as client:
         response = await client.post(
             OLLAMA_URL,
             json={
                 "model": OLLAMA_MODEL,
                 "prompt": full_prompt,
-                "stream": False,        # on veut la réponse en une fois
-                "format": "json",       # force Ollama à retourner du JSON valide
+                "stream": False,        # we want the response in one go
+                "format": "json",       # forces Ollama to return valid JSON
             }
         )
         response.raise_for_status()
@@ -89,7 +89,7 @@ async def parse_recipe(raw_description: str, suggested_title: str | None = None)
     result = response.json()
     raw_json = result["response"].strip()
 
-    # Nettoyage des backticks au cas où
+    # Strip backticks just in case
     if raw_json.startswith("```"):
         raw_json = raw_json.split("```")[1]
         if raw_json.startswith("json"):
@@ -98,7 +98,7 @@ async def parse_recipe(raw_description: str, suggested_title: str | None = None)
 
     data = json.loads(raw_json)
 
-    # Convertit les listes en objets Pydantic
+    # Convert the lists into Pydantic objects
     ingredients = [IngredientCreate(**ing) for ing in data.get("ingredients", [])]
     steps = [StepCreate(**step) for step in data.get("steps", [])]
 

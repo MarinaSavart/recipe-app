@@ -40,7 +40,7 @@ async def get_optional_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(optional_bearer),
     db: AsyncSession = Depends(get_db),
 ) -> User | None:
-    """Comme get_current_user, mais retourne None au lieu de lever une 401 si pas de token."""
+    """Like get_current_user, but returns None instead of raising a 401 when there's no token."""
     if not credentials:
         return None
 

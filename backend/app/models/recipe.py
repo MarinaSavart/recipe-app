@@ -19,14 +19,14 @@ class Recipe(Base):
     source_platform: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # "instagram" | "tiktok" | "manual"
     source_author: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     thumbnail_url: Mapped[Optional[str]] = mapped_column(String(2048), nullable=True)
-    raw_description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # description brute extraite
+    raw_description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # raw extracted description
 
-    # Infos recette
+    # Recipe info
     servings: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     prep_time_minutes: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     cook_time_minutes: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
-    # Macros (par portion)
+    # Macros (per serving)
     calories: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     proteins_g: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     carbs_g: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
@@ -36,7 +36,7 @@ class Recipe(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
 
-    # Relations
+    # Relationships
     ingredients: Mapped[list["Ingredient"]] = relationship(
         "Ingredient", back_populates="recipe", cascade="all, delete-orphan", order_by="Ingredient.position"
     )
@@ -61,7 +61,7 @@ class Ingredient(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     quantity: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)   # "600"
     unit: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)       # "g"
-    notes: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)     # "5% m.g."
+    notes: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)     # "5% fat"
 
     recipe: Mapped["Recipe"] = relationship("Recipe", back_populates="ingredients")
 

@@ -10,8 +10,8 @@ from app.schemas.recipe import RecipeCreate, RecipeUpdate
 
 async def get_or_404(recipe_id: int, db: AsyncSession) -> Recipe:
     """
-    Récupère une recette par son id avec toutes ses relations.
-    Lève une 404 si elle n'existe pas.
+    Fetches a recipe by its id with all its relationships.
+    Raises a 404 if it doesn't exist.
     """
     result = await db.execute(
         select(Recipe)
@@ -34,8 +34,8 @@ async def attach_like_metadata(
     current_user: User | None,
 ) -> None:
     """
-    Annote chaque recette avec `is_liked` et `likes_count` (attributs transitoires,
-    non persistés) pour que RecipeOut / RecipeListItem puissent les sérialiser.
+    Annotates each recipe with `is_liked` and `likes_count` (transient,
+    non-persisted attributes) so RecipeOut / RecipeListItem can serialize them.
     """
     items = recipes if isinstance(recipes, list) else [recipes]
     if not items:
@@ -66,7 +66,7 @@ async def attach_like_metadata(
 
 
 async def like_recipe(recipe_id: int, user_id: int, db: AsyncSession) -> None:
-    """Like idempotent : si le like existe déjà, ne crée pas de doublon."""
+    """Idempotent like: if the like already exists, doesn't create a duplicate."""
     existing = await db.execute(
         select(RecipeLike).where(
             RecipeLike.recipe_id == recipe_id, RecipeLike.user_id == user_id
@@ -80,7 +80,7 @@ async def like_recipe(recipe_id: int, user_id: int, db: AsyncSession) -> None:
 
 
 async def unlike_recipe(recipe_id: int, user_id: int, db: AsyncSession) -> None:
-    """Supprime un like. Lève une 404 s'il n'existe pas."""
+    """Removes a like. Raises a 404 if it doesn't exist."""
     result = await db.execute(
         select(RecipeLike).where(
             RecipeLike.recipe_id == recipe_id, RecipeLike.user_id == user_id
@@ -94,7 +94,7 @@ async def unlike_recipe(recipe_id: int, user_id: int, db: AsyncSession) -> None:
 
 
 async def get_liked_recipes(user_id: int, db: AsyncSession) -> list[Recipe]:
-    """Recettes likées par l'utilisateur, de la plus récemment likée à la plus ancienne."""
+    """Recipes liked by the user, from most recently liked to oldest."""
     result = await db.execute(
         select(Recipe)
         .join(RecipeLike, RecipeLike.recipe_id == Recipe.id)
@@ -105,7 +105,7 @@ async def get_liked_recipes(user_id: int, db: AsyncSession) -> list[Recipe]:
 
 
 def ensure_owner(recipe: Recipe, user: User) -> None:
-    """Lève une 403 si l'utilisateur courant n'est pas le propriétaire de la recette."""
+    """Raises a 403 if the current user isn't the recipe's owner."""
     if recipe.user_id != user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -123,9 +123,9 @@ async def save_recipe(
     thumbnail_url: str | None = None,
 ) -> Recipe:
     """
-    Sauvegarde une RecipeCreate en base — recette + ingrédients + étapes + tags.
+    Saves a RecipeCreate to the database — recipe + ingredients + steps + tags.
     """
-    # 1. Crée la recette principale
+    # 1. Create the main recipe
     recipe = Recipe(
         user_id=user_id,
         title=recipe_data.title,
@@ -144,17 +144,17 @@ async def save_recipe(
         fats_g=recipe_data.fats_g,
     )
     db.add(recipe)
-    await db.flush()  # flush pour obtenir l'id sans encore committer
+    await db.flush()  # flush to get the id without committing yet
 
-    # 2. Ajoute les ingrédients
+    # 2. Add the ingredients
     for ing in recipe_data.ingredients:
         db.add(Ingredient(recipe_id=recipe.id, **ing.model_dump()))
 
-    # 3. Ajoute les étapes
+    # 3. Add the steps
     for step in recipe_data.steps:
         db.add(Step(recipe_id=recipe.id, **step.model_dump()))
 
-    # 4. Ajoute les tags
+    # 4. Add the tags
     for name in recipe_data.tags:
         db.add(Tag(recipe_id=recipe.id, name=name))
 
@@ -164,33 +164,33 @@ async def save_recipe(
 
 async def apply_update(recipe: Recipe, payload: RecipeUpdate, db: AsyncSession) -> Recipe:
     """
-    Applique un RecipeUpdate à une recette existante. Seuls les champs envoyés
-    sont modifiés (PATCH). Pour les ingrédients/étapes/tags : remplacement
-    complet si fournis.
+    Applies a RecipeUpdate to an existing recipe. Only the fields sent
+    are modified (PATCH). For ingredients/steps/tags: fully replaced
+    if provided.
     """
     update_data = payload.model_dump(exclude_unset=True)
 
-    # Champs simples
+    # Simple fields
     for field in ["title", "description", "servings", "prep_time_minutes",
                   "cook_time_minutes", "calories", "proteins_g", "carbs_g", "fats_g"]:
         if field in update_data:
             setattr(recipe, field, update_data[field])
 
-    # Remplacement complet des ingrédients si fournis
+    # Fully replace the ingredients if provided
     if "ingredients" in update_data:
         for ing in recipe.ingredients:
             await db.delete(ing)
         for ing in payload.ingredients:
             db.add(Ingredient(recipe_id=recipe.id, **ing.model_dump()))
 
-    # Remplacement complet des étapes si fournies
+    # Fully replace the steps if provided
     if "steps" in update_data:
         for step in recipe.steps:
             await db.delete(step)
         for step in payload.steps:
             db.add(Step(recipe_id=recipe.id, **step.model_dump()))
 
-    # Remplacement complet des tags si fournis
+    # Fully replace the tags if provided
     if "tags" in update_data:
         for tag in recipe.tags:
             await db.delete(tag)
