@@ -16,6 +16,7 @@ const NAV_ITEMS: NavItem[] = [
 
 interface NavbarProps {
   recipeCount: number
+  favoritesCount: number
   collapsed: boolean
   onToggle: () => void
   mobileOpen: boolean
@@ -23,7 +24,7 @@ interface NavbarProps {
   onThemeToggle: () => void
 }
 
-export default function Navbar({ recipeCount, collapsed, onToggle, mobileOpen, theme, onThemeToggle }: NavbarProps) {
+export default function Navbar({ recipeCount, favoritesCount, collapsed, onToggle, mobileOpen, theme, onThemeToggle }: NavbarProps) {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, logout } = useAuth()
@@ -67,6 +68,9 @@ export default function Navbar({ recipeCount, collapsed, onToggle, mobileOpen, t
               <span className="navbar__btn-label">{item.label}</span>
               {item.path === '/' && (
                 <span className="navbar__count">{recipeCount}</span>
+              )}
+              {item.path === '/favorites' && (
+                <span className="navbar__count">{favoritesCount}</span>
               )}
             </button>
           ))}

@@ -4,7 +4,11 @@ import RecipeCard from '../components/RecipeCard'
 import { getLikedRecipes } from '../services/api'
 import type { RecipeListItem } from '../types/recipe'
 
-export default function FavoritesRecipes() {
+interface FavoritesRecipesProps {
+  onCountChange: (count: number) => void
+}
+
+export default function FavoritesRecipes({ onCountChange }: FavoritesRecipesProps) {
   const [recipes, setRecipes] = useState<RecipeListItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -12,13 +16,18 @@ export default function FavoritesRecipes() {
 
   useEffect(() => {
     getLikedRecipes()
-      .then(setRecipes)
+      .then((data) => {
+        setRecipes(data)
+        onCountChange(data.length)
+      })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false))
   }, [])
 
   function handleLikeToggle(id: number) {
-    setRecipes(prev => prev.filter(r => r.id !== id))
+    const next = recipes.filter(r => r.id !== id)
+    setRecipes(next)
+    onCountChange(next.length)
   }
 
   if (loading) return (
