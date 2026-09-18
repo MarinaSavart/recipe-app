@@ -27,6 +27,9 @@ async def get_current_user(
     user = result.scalar_one_or_none()
 
     if not user:
-        raise HTTPException(status_code=404, detail="Utilisateur introuvable")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Session invalide",
+        )
 
     return user
