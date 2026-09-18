@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import MacroBox from '../components/MacroBox'
-import { getRecipe, deleteRecipe } from '../services/api'
+import { getRecipe, deleteRecipe, likeRecipe, unlikeRecipe } from '../services/api'
 import type { Recipe } from '../types/recipe'
 import { formatQty, platformLabel, resolveMediaUrl } from '../utils/recipeDisplay'
 
@@ -24,6 +24,25 @@ export default function RecipeDetail() {
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false))
   }, [id])
+
+  function handleLikeToggle() {
+    if (!recipe) return
+    const wasLiked = recipe.isLiked
+    const recipeId = recipe.id
+
+    setRecipe(prev => prev
+      ? { ...prev, isLiked: !wasLiked, likesCount: prev.likesCount + (wasLiked ? -1 : 1) }
+      : prev
+    )
+
+    const request = wasLiked ? unlikeRecipe(recipeId) : likeRecipe(recipeId)
+    request.catch(() => {
+      setRecipe(prev => prev
+        ? { ...prev, isLiked: wasLiked, likesCount: prev.likesCount + (wasLiked ? 1 : -1) }
+        : prev
+      )
+    })
+  }
 
   async function handleDelete() {
     if (!recipe) return
@@ -104,6 +123,12 @@ export default function RecipeDetail() {
           disabled={deleting}
         >
           {deleting ? '⏳ Suppression…' : '🗑 Supprimer'}
+        </button>
+        <button
+          className="btn-ghost"
+          onClick={handleLikeToggle}
+        >
+          {recipe.isLiked ? '❤️ Retirer des favoris' : '🤍 Ajouter aux favoris'}
         </button>
       </div>
 

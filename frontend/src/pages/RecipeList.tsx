@@ -24,6 +24,10 @@ export default function RecipeList({ onCountChange }: RecipeListProps) {
       .finally(() => setLoading(false))
   }, [])
 
+  function handleLikeToggle(id: number) {
+    setRecipes(prev => prev.map(r => r.id === id ? { ...r, isLiked: !r.isLiked } : r))
+  }
+
   if (loading) return (
     <div className="empty">
       <div className="empty__icon">⏳</div>
@@ -64,7 +68,12 @@ export default function RecipeList({ onCountChange }: RecipeListProps) {
           </div>
         ) : (
           recipes.map((recipe) => (
-            <RecipeCard key={recipe.id} recipe={recipe} />
+            <RecipeCard
+              key={recipe.id}
+              recipe={recipe}
+              isLiked={recipe.isLiked}
+              onLikeToggle={handleLikeToggle}
+            />
           ))
         )}
       </div>
