@@ -329,3 +329,4 @@ except ValueError as exc:
 * ❌ `except Exception: pass`
 * ❌ Modification directe du schéma DB sans migration Alembic
 * ❌ Utilisation de l'API Anthropic sans demande explicite
+* ❌ Remplacer Ollama/Mistral par Claude API sans demande explicite

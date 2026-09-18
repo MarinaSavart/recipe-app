@@ -8,7 +8,7 @@ Interface web construite avec **React** + **TypeScript** + **Vite** pour gérer 
 
 - **React 19** + **TypeScript**
 - **Vite** — bundler
-- **React Router v6** — navigation
+- **React Router v7** — navigation
 - **SCSS** — styles maison
 - **React Compiler** — optimisations automatiques
 
