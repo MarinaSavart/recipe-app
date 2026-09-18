@@ -40,6 +40,8 @@ export interface Recipe {
   proteins_g: number | null
   carbs_g: number | null
   fats_g: number | null
+  isLiked: boolean
+  likesCount: number
   ingredients: Ingredient[]
   steps: Step[]
   tags: Tag[]
@@ -59,6 +61,8 @@ export interface RecipeListItem {
   proteins_g: number | null
   carbs_g: number | null
   fats_g: number | null
+  isLiked: boolean
+  likesCount: number
   created_at: string
 }
 
