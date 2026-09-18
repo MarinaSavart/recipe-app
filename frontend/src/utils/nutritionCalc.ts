@@ -1,15 +1,14 @@
 import type { NutritionalGoals, PersonalMetrics } from "../types/profil"
 
-
-export function getActivityMultiplier(workactivity: string, weeklysessions: number): number {
+export function getActivityMultiplier(workActivity: string, weeklySessions: number): number {
   const base: Record<string, number> = {
     sedentaire: 1.2,
     leger: 1.375,
     actif: 1.55,
     tres_actif: 1.725,
   }
-  const sportBonus = Math.min(weeklysessions, 6) * 0.025
-  return (base[workactivity] ?? 1.2) + sportBonus
+  const sportBonus = Math.min(weeklySessions, 14) * 0.025
+  return (base[workActivity] ?? 1.2) + sportBonus
 }
 
 export function calculateTDEE(metrics: PersonalMetrics): number | null {
@@ -27,7 +26,7 @@ export function calculateTDEE(metrics: PersonalMetrics): number | null {
         : 10 * metrics.weight + 6.25 * metrics.height - 5 * metrics.age - 161
   }
 
-  return Math.round(bmr * getActivityMultiplier(metrics.workactivity, metrics.weeklysessions))
+  return Math.round(bmr * getActivityMultiplier(metrics.workActivity, metrics.weeklySessions))
 }
 
 export function calculateMacros(
