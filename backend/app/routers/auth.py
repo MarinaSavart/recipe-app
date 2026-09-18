@@ -1,13 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-# from google.oauth2 import id_token
-# from google.auth.transport import requests as google_requests
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import settings
 from app.database import get_db
 from app.models.user import User
-from app.schemas.user import GoogleAuthRequest, LoginRequest, RegisterRequest, TokenOut, UserOut
+from app.schemas.user import LoginRequest, RegisterRequest, TokenOut, UserOut
 from app.services.auth import create_access_token, hash_password, verify_password
 from app.dependencies import get_current_user
 
@@ -46,51 +43,6 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
 
     token = create_access_token(user.id)
     return TokenOut(access_token=token, user=UserOut.model_validate(user))
-
-
-# @router.post("/google", response_model=TokenOut)
-# async def google_auth(payload: GoogleAuthRequest, db: AsyncSession = Depends(get_db)):
-    # try:
-    #     # Vérifie le token Google
-    #     info = id_token.verify_oauth2_token(
-    #         payload.token,
-    #         google_requests.Request(),
-    #         settings.GOOGLE_CLIENT_ID,
-    #     )
-    # except Exception:
-    #     raise HTTPException(status_code=401, detail="Token Google invalide")
-
-    # google_id = info["sub"]
-    # email = info["email"]
-    # name = info.get("name")
-    # avatar_url = info.get("picture")
-
-    # # Cherche l'utilisateur par google_id ou email
-    # result = await db.execute(select(User).where(User.google_id == google_id))
-    # user = result.scalar_one_or_none()
-
-    # if not user:
-    #     # Cherche par email (compte existant sans Google)
-    #     result = await db.execute(select(User).where(User.email == email))
-    #     user = result.scalar_one_or_none()
-
-    #     if user:
-    #         # Lie le compte Google au compte existant
-    #         user.google_id = google_id
-    #         user.avatar_url = avatar_url
-    #     else:
-    #         # Crée un nouveau compte
-    #         user = User(
-    #             email=email,
-    #             google_id=google_id,
-    #             name=name,
-    #             avatar_url=avatar_url,
-    #         )
-    #         db.add(user)
-    #         await db.flush()
-
-    # token = create_access_token(user.id)
-    # return TokenOut(access_token=token, user=UserOut.model_validate(user))
 
 
 @router.get("/me", response_model=UserOut)

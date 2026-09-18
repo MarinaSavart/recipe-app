@@ -10,6 +10,11 @@ class ImportRequest(BaseModel):
     url: str
 
 
+class ImportManualRequest(BaseModel):
+    description: str
+    source_url: Optional[str] = None
+
+
 # ── Ingredient ─────────────────────────────────────────────────────────────────
 
 class IngredientBase(BaseModel):
