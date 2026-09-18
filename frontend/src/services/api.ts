@@ -42,6 +42,17 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
         ...options,
     })
 
+    if (res.status === 401) {
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+        window.location.href = '/login'
+        throw new Error('Session expirée — veuillez vous reconnecter')
+    }
+
+    if (res.status === 403) {
+        throw new Error('Action non autorisée')
+    }
+
     if (!res.ok) {
         // On essaie de récupérer le message d'erreur du backend
         const error = await res.json().catch(() => ({ detail: 'Erreur inconnue' }))
