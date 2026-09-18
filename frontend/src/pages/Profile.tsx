@@ -33,7 +33,7 @@ export default function Profile() {
       height: parsed.height ?? parsed.taille ?? 0,
       bodyFatPercent: parsed.bodyFatPercent ?? parsed.masse_grasse ?? null,
       workActivity: parsed.workActivity ?? parsed.workactivity ?? parsed.activite_pro ?? 'sedentaire',
-      weeklySessions: parsed.weeklySessions ?? parsed.seances_sport ?? 3,  // ← le fix du NaN
+      weeklySessions: parsed.weeklySessions ?? parsed.weeklysessions ?? parsed.seances_sport ?? 3,  // ← le fix du NaN
     }
   })
 
