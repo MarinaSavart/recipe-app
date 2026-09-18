@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from app.config import settings
 from app.database import engine, Base
 from app.models import recipe as recipe_models  # noqa: F401 — import nécessaire pour que Base "voit" les modèles
 from app.routers.recipes import router as recipes_router
@@ -33,7 +34,7 @@ app = FastAPI(
 # Autorise le front (Vite sur :5173 ou CRA sur :3000) à appeler l'API
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],
+    allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
