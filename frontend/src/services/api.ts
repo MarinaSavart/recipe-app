@@ -1,5 +1,21 @@
 import type { Recipe, RecipeListItem, UpdateRecipePayload } from "../types/recipe"
 
+// Le backend renvoie is_liked / likes_count en snake_case (comme le reste du JSON) ;
+// on les convertit ici en isLiked / likesCount pour respecter la convention camelCase
+// des objets internes au frontend.
+type RawRecipe = Omit<Recipe, 'isLiked' | 'likesCount'> & { is_liked: boolean; likes_count: number }
+type RawRecipeListItem = Omit<RecipeListItem, 'isLiked' | 'likesCount'> & { is_liked: boolean; likes_count: number }
+
+function mapRecipe(raw: RawRecipe): Recipe {
+    const { is_liked, likes_count, ...rest } = raw
+    return { ...rest, isLiked: is_liked, likesCount: likes_count }
+}
+
+function mapRecipeListItem(raw: RawRecipeListItem): RecipeListItem {
+    const { is_liked, likes_count, ...rest } = raw
+    return { ...rest, isLiked: is_liked, likesCount: likes_count }
+}
+
 interface AuthResponse {
     access_token: string
     user: {
@@ -58,28 +74,45 @@ export async function register(name: string, email: string, password: string): P
 // ── Recipes ────────────────────────────────────────────────────────────────────
 
 export async function getRecipes(): Promise<RecipeListItem[]> {
-    return request<RecipeListItem[]>('/recipes/')
+    const raw = await request<RawRecipeListItem[]>('/recipes/')
+    return raw.map(mapRecipeListItem)
 }
 
 export async function getRecipe(id: number): Promise<Recipe> {
-    return request<Recipe>(`/recipes/${id}/`)
+    const raw = await request<RawRecipe>(`/recipes/${id}/`)
+    return mapRecipe(raw)
+}
+
+export async function getLikedRecipes(): Promise<RecipeListItem[]> {
+    const raw = await request<RawRecipeListItem[]>('/recipes/liked')
+    return raw.map(mapRecipeListItem)
+}
+
+export async function likeRecipe(id: number): Promise<void> {
+  await request<void>(`/recipes/${id}/like`, { method: 'POST' })
+}
+
+export async function unlikeRecipe(id: number): Promise<void> {
+  await request<void>(`/recipes/${id}/like`, { method: 'DELETE' })
 }
 
 export async function importFromUrl(url: string): Promise<Recipe> {
-  return request<Recipe>('/recipes/import', {
+  const raw = await request<RawRecipe>('/recipes/import', {
     method: 'POST',
     body: JSON.stringify({ url }),
   })
+  return mapRecipe(raw)
 }
 
 export async function importManual(description: string, sourceUrl?: string): Promise<Recipe> {
-  return request<Recipe>('/recipes/import/manual', {
+  const raw = await request<RawRecipe>('/recipes/import/manual', {
     method: 'POST',
     body: JSON.stringify({
       description,
       source_url: sourceUrl,
     }),
   })
+  return mapRecipe(raw)
 }
 
 export async function deleteRecipe(id: number): Promise<void> {
@@ -89,10 +122,11 @@ export async function deleteRecipe(id: number): Promise<void> {
 }
 
 export async function updateRecipe(id: number, data: Partial<UpdateRecipePayload>): Promise<Recipe> {
-  return request<Recipe>(`/recipes/${id}`, {
+  const raw = await request<RawRecipe>(`/recipes/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(data),
   })
+  return mapRecipe(raw)
 }
 
 export async function uploadPhoto(id: number, file: File): Promise<Recipe> {
@@ -108,5 +142,6 @@ export async function uploadPhoto(id: number, file: File): Promise<Recipe> {
     const error = await res.json().catch(() => ({ detail: 'Erreur inconnue' }))
     throw new Error(error.detail ?? 'Erreur inconnue')
   }
-  return res.json()
+  const raw: RawRecipe = await res.json()
+  return mapRecipe(raw)
 }
