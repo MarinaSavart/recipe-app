@@ -63,9 +63,9 @@ export async function updateRecipe(id: number, data: Partial<{
   prep_time_minutes: number | null
   cook_time_minutes: number | null
   calories: number | null
-  proteins_g: number | null
-  carbs_g: number | null
-  fats_g: number | null
+  proteinsG: number | null
+  carbsG: number | null
+  fatsG: number | null
   ingredients: { name: string; quantity: string | null; unit: string | null; notes: string | null; position: number }[]
   steps: { content: string; position: number; duration_minutes: number | null }[]
   tags: string[]

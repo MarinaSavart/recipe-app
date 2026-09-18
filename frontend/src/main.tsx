@@ -10,6 +10,7 @@ import RecipeEdit from './pages/RecipeEdit'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import './styles/main.scss'
+import Profile from './pages/Profile'
 
 type Theme = 'dark' | 'light'
 
@@ -69,6 +70,7 @@ function AppLayout() {
             <Route path="/recipes/:id"      element={<RecipeDetail />} />
             <Route path="/recipes/:id/edit" element={<RecipeEdit />} />
             <Route path="/import"           element={<RecipeImport />} />
+            <Route path="/profile"           element={<Profile />} />
           </Routes>
         </main>
       </div>

@@ -10,6 +10,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { icon: '📚', label: 'Mes recettes', path: '/' },
   { icon: '⚡', label: 'Importer',     path: '/import' },
+  { icon: '👤', label: 'Profil',       path: '/profile' },
 ]
 
 interface NavbarProps {

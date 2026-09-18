@@ -1,0 +1,256 @@
+@use 'variables' as *;
+
+.profile {
+  max-width: 800px;
+
+  // ── Header ──────────────────────────────────────────────────────────────────
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xl;
+    margin-bottom: $spacing-2xl;
+    padding-bottom: $spacing-xl;
+    border-bottom: 1px solid $border;
+  }
+
+  &__avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid $border;
+  }
+
+  &__avatar-placeholder {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: $amber-glow;
+    border: 2px solid $amber-dim;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    flex-shrink: 0;
+  }
+
+  &__info {
+    flex: 1;
+  }
+
+  &__name {
+    font-family: $font-display;
+    font-size: 26px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  &__email {
+    font-size: 14px;
+    color: $muted;
+  }
+
+  // ── Section ─────────────────────────────────────────────────────────────────
+  &__section {
+    background: $card;
+    border: 1px solid $border;
+    border-radius: $radius-lg;
+    padding: $spacing-xl;
+    margin-bottom: $spacing-lg;
+  }
+
+  &__section-title {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: $muted;
+    margin-bottom: $spacing-lg;
+    padding-bottom: $spacing-sm;
+    border-bottom: 1px solid $border;
+  }
+
+  // ── Régime ──────────────────────────────────────────────────────────────────
+  &__regimes {
+    display: flex;
+    gap: $spacing-sm;
+    flex-wrap: wrap;
+    margin-bottom: $spacing-lg;
+  }
+
+  &__regime-btn {
+    padding: $spacing-sm $spacing-md;
+    border-radius: $radius-full;
+    border: 1px solid $border;
+    font-size: 13px;
+    color: $muted;
+    transition: all $transition;
+
+    &:hover {
+      border-color: $amber-dim;
+      color: $text;
+    }
+
+    &--active {
+      background: $amber-glow;
+      border-color: $amber-dim;
+      color: $amber;
+    }
+  }
+
+  // ── Macros goals ────────────────────────────────────────────────────────────
+  &__goals-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: $spacing-md;
+    margin-bottom: $spacing-lg;
+
+    @media (max-width: 768px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__goal-field {
+    label {
+      display: block;
+      font-size: 12px;
+      color: $muted;
+      margin-bottom: $spacing-xs;
+    }
+
+    input {
+      width: 100%;
+      background: $surface;
+      border: 1px solid $border;
+      border-radius: $radius-md;
+      color: $text;
+      font-family: $font-body;
+      font-size: 14px;
+      padding: $spacing-sm $spacing-md;
+      outline: none;
+      transition: border-color $transition;
+
+      &:focus { border-color: $amber-dim; }
+    }
+  }
+
+  &__repas-selector {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    margin-bottom: $spacing-lg;
+
+    label {
+      font-size: 13px;
+      color: $muted;
+    }
+
+    .portions-selector__btn {
+      width: 32px;
+      height: 32px;
+    }
+
+    .portions-selector__value {
+      font-size: 20px;
+    }
+  }
+
+  // ── Par repas ────────────────────────────────────────────────────────────────
+  &__per-meal {
+    background: $surface;
+    border-radius: $radius-md;
+    padding: $spacing-md;
+    margin-bottom: $spacing-lg;
+
+    &-title {
+      font-size: 12px;
+      color: $muted;
+      margin-bottom: $spacing-sm;
+    }
+
+    &-macros {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: $spacing-sm;
+
+      @media (max-width: 768px) {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  }
+
+  // ── Carousel ────────────────────────────────────────────────────────────────
+  &__carousel {
+    overflow-x: auto;
+    display: flex;
+    gap: $spacing-md;
+    padding-bottom: $spacing-sm;
+    scrollbar-width: thin;
+    scrollbar-color: $border transparent;
+
+    &::-webkit-scrollbar { height: 4px; }
+    &::-webkit-scrollbar-thumb { background: $border; border-radius: 2px; }
+  }
+
+  &__carousel-card {
+    flex-shrink: 0;
+    width: 200px;
+    background: $surface;
+    border: 1px solid $border;
+    border-radius: $radius-lg;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color $transition, transform 0.2s;
+
+    &:hover {
+      border-color: $amber-dim;
+      transform: translateY(-2px);
+    }
+
+    img, &-placeholder {
+      width: 100%;
+      aspect-ratio: 16/9;
+      object-fit: cover;
+    }
+
+    &-placeholder {
+      background: $card;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    &-body {
+      padding: $spacing-sm $spacing-md;
+    }
+
+    &-title {
+      font-size: 13px;
+      font-weight: 500;
+      line-height: 1.3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    &-meta {
+      font-size: 11px;
+      color: $muted;
+      margin-top: 2px;
+    }
+  }
+
+  &__empty-carousel {
+    font-size: 13px;
+    color: $muted;
+    padding: $spacing-md 0;
+  }
+
+  // ── Save btn ────────────────────────────────────────────────────────────────
+  &__save {
+    width: 100%;
+    padding: 12px;
+    margin-top: $spacing-sm;
+  }
+}
