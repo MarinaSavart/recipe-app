@@ -107,8 +107,8 @@ export default function MetricsSection({
           {WORK_ACTIVITIES.map(a => (
             <button
               key={a.key}
-              className={`profile__regime-btn ${metrics.workactivity === a.key ? 'profile__regime-btn--active' : ''}`}
-              onClick={() => update({ workactivity: a.key as PersonalMetrics['workactivity'] })}
+              className={`profile__regime-btn ${metrics.workActivity === a.key ? 'profile__regime-btn--active' : ''}`}
+              onClick={() => update({ workActivity: a.key as PersonalMetrics['workActivity'] })}
               title={a.desc}
             >
               {a.label}
@@ -123,14 +123,14 @@ export default function MetricsSection({
         <div className="portions-selector">
           <button
             className="portions-selector__btn"
-            onClick={() => update({ weeklysessions: Math.max(0, metrics.weeklysessions - 1) })}
+            onClick={() => update({ weeklySessions: Math.max(0, metrics.weeklySessions - 1) })}
           >
             −
           </button>
-          <span className="portions-selector__value">{metrics.weeklysessions}</span>
+          <span className="portions-selector__value">{metrics.weeklySessions}</span>
           <button
             className="portions-selector__btn"
-            onClick={() => update({ weeklysessions: Math.min(14, metrics.weeklysessions + 1) })}
+            onClick={() => update({ weeklySessions: Math.min(14, metrics.weeklySessions + 1) })}
           >
             +
           </button>
