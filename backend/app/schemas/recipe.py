@@ -1,18 +1,18 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, HttpUrl
 
 
 # ── Import ─────────────────────────────────────────────────────────────────────
 
 class ImportRequest(BaseModel):
-    url: str
+    url: HttpUrl
 
 
 class ImportManualRequest(BaseModel):
     description: str
-    source_url: Optional[str] = None
+    source_url: Optional[HttpUrl] = None
 
 
 # ── Ingredient ─────────────────────────────────────────────────────────────────
@@ -60,7 +60,7 @@ class TagOut(BaseModel):
 class RecipeBase(BaseModel):
     title: str
     description: Optional[str] = None
-    source_url: Optional[str] = None
+    source_url: Optional[HttpUrl] = None
     source_platform: Optional[str] = None
     source_author: Optional[str] = None
     thumbnail_url: Optional[str] = None

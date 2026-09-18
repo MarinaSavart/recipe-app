@@ -103,7 +103,8 @@ export default function RecipeDetail() {
       {recipe.source_author && (
         <div className="detail__author">@{recipe.source_author}</div>
       )}
-      {recipe.source_url && (
+      {recipe.source_url &&
+       (recipe.source_url.startsWith('http://') || recipe.source_url.startsWith('https://')) && (
         <a className="detail__source" href={recipe.source_url} target="_blank" rel="noreferrer">
           ↗ Voir la vidéo originale
         </a>

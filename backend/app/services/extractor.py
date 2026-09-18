@@ -29,6 +29,25 @@ def _detect_platform(url: str) -> str:
     return "unknown"
 
 
+ALLOWED_DOMAINS = {
+    "instagram.com", "www.instagram.com",
+    "tiktok.com", "www.tiktok.com", "vm.tiktok.com",
+}
+
+
+def _validate_domain(url: str) -> None:
+    """
+    Restreint l'extraction aux domaines Instagram/TikTok pour éviter qu'une URL
+    arbitraire ne fasse effectuer une requête serveur (SSRF) par yt-dlp.
+    """
+    parsed = urlparse(url)
+    if parsed.hostname not in ALLOWED_DOMAINS:
+        raise ValueError(
+            f"Domaine non autorisé : {parsed.hostname}. "
+            "Seuls Instagram et TikTok sont supportés."
+        )
+
+
 BROWSERS = [
     "firefox",
     "chrome",
@@ -72,7 +91,14 @@ async def extract_from_url(url: str) -> ExtractedData:
     On utilise run_in_executor pour exécuter le code synchrone yt-dlp
     dans un thread séparé sans bloquer la boucle d'événements FastAPI.
     """
-    # asyncio.to_thread = "exécute cette fonction bloquante dans un thread séparé"
+    # url peut être un pydantic.HttpUrl (non compatible avec urlparse/yt-dlp) : on le
+    # normalise en str avant toute validation ou traitement.
+    url = str(url)
+
+    # Validation du domaine AVANT tout appel à yt-dlp (et avant le chargement des
+    # cookies navigateur) pour empêcher un SSRF via une URL arbitraire.
+    _validate_domain(url)
+
     info = await asyncio.to_thread(_extract_sync, url)
 
     description = info.get("description") or info.get("title") or ""
