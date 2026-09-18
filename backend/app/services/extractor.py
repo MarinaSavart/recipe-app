@@ -72,10 +72,8 @@ async def extract_from_url(url: str) -> ExtractedData:
     On utilise run_in_executor pour exécuter le code synchrone yt-dlp
     dans un thread séparé sans bloquer la boucle d'événements FastAPI.
     """
-    loop = asyncio.get_event_loop()
-
-    # run_in_executor = "exécute cette fonction bloquante dans un thread"
-    info = await loop.run_in_executor(None, _extract_sync, url)
+    # asyncio.to_thread = "exécute cette fonction bloquante dans un thread séparé"
+    info = await asyncio.to_thread(_extract_sync, url)
 
     description = info.get("description") or info.get("title") or ""
     title = info.get("title") or info.get("fulltitle")
