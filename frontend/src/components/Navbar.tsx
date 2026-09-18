@@ -8,7 +8,7 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { icon: '📚', label: 'Mes recettes', path: '/' },
+  { icon: '📚', label: 'Recettes', path: '/' },
   { icon: '⚡', label: 'Importer',     path: '/import' },
   { icon: '❤️', label: 'Mes favoris',  path: '/favorites' },
   { icon: '👤', label: 'Profil',       path: '/profile' },
