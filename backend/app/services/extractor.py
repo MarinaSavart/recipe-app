@@ -1,9 +1,12 @@
 import asyncio
+import logging
 from dataclasses import dataclass
 from typing import Optional
 from urllib.parse import urlparse
 
 import yt_dlp
+
+logger = logging.getLogger(__name__)
 
 @dataclass
 class ExtractedData:
@@ -43,7 +46,7 @@ def _extract_sync(url: str) -> dict:
     last_error = None
     for browser in BROWSERS:
         try:
-            print(f"Tentative avec cookies: {browser}")
+            logger.debug("Tentative avec cookies: %s", browser)
             ydl_opts = {
                 "quiet": True,
                 "no_warnings": True,
@@ -53,10 +56,10 @@ def _extract_sync(url: str) -> dict:
             }
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=False)
-            print(f"✅ Succès avec: {browser}")
+            logger.debug("Succès avec cookies: %s", browser)
             return info
-        except Exception as e:
-            print(f"❌ {browser} échoué: {e}")
+        except yt_dlp.utils.YoutubeDLError as e:
+            logger.debug("Échec avec cookies %s: %s", browser, e)
             last_error = e
             continue
 
