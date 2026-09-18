@@ -57,9 +57,9 @@ export default function RecipeEdit() {
         setPrepTime(data.prep_time_minutes?.toString() ?? '')
         setCookTime(data.cook_time_minutes?.toString() ?? '')
         setCalories(data.calories?.toString() ?? '')
-        setProteins(data.proteinsG?.toString() ?? '')
-        setCarbs(data.carbsG?.toString() ?? '')
-        setFats(data.fatsG?.toString() ?? '')
+        setProteins(data.proteins_g?.toString() ?? '')
+        setCarbs(data.carbs_g?.toString() ?? '')
+        setFats(data.fats_g?.toString() ?? '')
         setTagsInput(data.tags.map(t => t.name).join(', '))
         setIngredients(data.ingredients)
         setSteps(data.steps)
@@ -143,9 +143,9 @@ export default function RecipeEdit() {
         prep_time_minutes: prepTime ? parseInt(prepTime) : null,
         cook_time_minutes: cookTime ? parseInt(cookTime) : null,
         calories: calories ? parseFloat(calories) : null,
-        proteinsG: proteins ? parseFloat(proteins) : null,
-        carbsG: carbs ? parseFloat(carbs) : null,
-        fatsG: fats ? parseFloat(fats) : null,
+        proteins_g: proteins ? parseFloat(proteins) : null,
+        carbs_g: carbs ? parseFloat(carbs) : null,
+        fats_g: fats ? parseFloat(fats) : null,
         tags: tagsInput.split(',').map(t => t.trim()).filter(Boolean),
         ingredients: ingredients
           .filter(ing => ing.name.trim())

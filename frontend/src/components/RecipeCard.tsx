@@ -44,19 +44,19 @@ export default function RecipeCard({ recipe }: RecipeCardProps) {
               <strong>{Math.round(recipe.calories)}</strong> kcal
             </span>
           )}
-          {recipe.proteinsG && (
+          {recipe.proteins_g && (
             <span className="macro-pill">
-              <strong>{Math.round(recipe.proteinsG)}</strong> prot.
+              <strong>{Math.round(recipe.proteins_g)}</strong> prot.
             </span>
           )}
-          {recipe.carbsG && (
+          {recipe.carbs_g && (
             <span className="macro-pill">
-              <strong>{Math.round(recipe.carbsG)}</strong> gluc.
+              <strong>{Math.round(recipe.carbs_g)}</strong> gluc.
             </span>
           )}
-          {recipe.fatsG && (
+          {recipe.fats_g && (
             <span className="macro-pill">
-              <strong>{Math.round(recipe.fatsG)}</strong> lip.
+              <strong>{Math.round(recipe.fats_g)}</strong> lip.
             </span>
           )}
         </div>

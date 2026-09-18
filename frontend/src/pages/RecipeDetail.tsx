@@ -108,14 +108,14 @@ export default function RecipeDetail() {
       </div>
 
       {/* Macros */}
-      {(recipe.calories || recipe.proteinsG || recipe.carbsG || recipe.fatsG) && (
+      {(recipe.calories || recipe.proteins_g || recipe.carbs_g || recipe.fats_g) && (
         <div className="detail__section">
           <div className="detail__section-title">Macros par portion</div>
           <div className="detail__macros">
             {recipe.calories && <MacroBox value={recipe.calories} label="kcal" />}
-            {recipe.proteinsG && <MacroBox value={recipe.proteinsG} label="Prot." unit="g" />}
-            {recipe.carbsG && <MacroBox value={recipe.carbsG} label="Gluc." unit="g" />}
-            {recipe.fatsG && <MacroBox value={recipe.fatsG} label="Lip." unit="g" />}
+            {recipe.proteins_g && <MacroBox value={recipe.proteins_g} label="Prot." unit="g" />}
+            {recipe.carbs_g && <MacroBox value={recipe.carbs_g} label="Gluc." unit="g" />}
+            {recipe.fats_g && <MacroBox value={recipe.fats_g} label="Lip." unit="g" />}
           </div>
         </div>
       )}
