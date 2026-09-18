@@ -4,8 +4,8 @@ export interface PersonalMetrics {
   weight: number
   height: number
   bodyFatPercent: number | null
-  workactivity: 'sedentaire' | 'leger' | 'actif' | 'tres_actif'
-  weeklysessions: number
+  workActivity: 'sedentaire' | 'leger' | 'actif' | 'tres_actif'
+  weeklySessions: number
 }
 
 export interface NutritionalGoals {
@@ -37,8 +37,8 @@ export const DEFAULT_METRICS: PersonalMetrics = {
   weight: 0,
   height: 0,
   bodyFatPercent: null,
-  workactivity: 'sedentaire',
-  weeklysessions: 3,
+  workActivity: 'sedentaire',  // ← idem
+  weeklySessions: 3,
 }
 
 export const DEFAULT_GOALS: NutritionalGoals = {
