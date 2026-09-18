@@ -4,7 +4,7 @@ from sqlalchemy.orm import DeclarativeBase
 from app.config import settings
 
 # Le moteur de connexion à la base de données PostgreSQL 
-engine = create_async_engine(settings.DATABASE_URL, echo=True)
+engine = create_async_engine(settings.DATABASE_URL, echo=settings.DEBUG)
 
 # La "factory" de session — on utilise pour ouvir une session à la base de données
 AsyncSessionLocal = async_sessionmaker(

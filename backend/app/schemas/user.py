@@ -12,10 +12,6 @@ class LoginRequest(BaseModel):
     password: str
 
 
-class GoogleAuthRequest(BaseModel):
-    token: str  # le token Google renvoyé par le front
-
-
 class UserOut(BaseModel):
     id: int
     email: str
