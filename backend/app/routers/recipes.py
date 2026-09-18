@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, get_optional_user
 from app.models.recipe import Recipe
 from app.models.user import User
 from app.schemas.recipe import (
@@ -76,7 +76,9 @@ async def import_from_url(
         thumbnail_url=extracted.thumbnail_url,
     )
 
-    return await recipe_service.get_or_404(recipe.id, db)
+    saved_recipe = await recipe_service.get_or_404(recipe.id, db)
+    await recipe_service.attach_like_metadata(saved_recipe, db, current_user)
+    return saved_recipe
 
 
 @router.post("/import/manual", response_model=RecipeOut, status_code=status.HTTP_201_CREATED)
@@ -110,32 +112,75 @@ async def import_manual(
         source_platform="manual",
     )
 
-    return await recipe_service.get_or_404(recipe.id, db)
+    saved_recipe = await recipe_service.get_or_404(recipe.id, db)
+    await recipe_service.attach_like_metadata(saved_recipe, db, current_user)
+    return saved_recipe
+
+
+@router.get("/liked", response_model=list[RecipeListItem])
+async def list_liked_recipes(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Recettes likées par l'utilisateur connecté, version allégée.
+    Triées de la plus récemment likée à la plus ancienne.
+    Déclarée avant /{recipe_id} pour éviter que "liked" soit interprété comme un id.
+    """
+    recipes = await recipe_service.get_liked_recipes(current_user.id, db)
+    await recipe_service.attach_like_metadata(recipes, db, current_user)
+    return recipes
 
 
 @router.get("/", response_model=list[RecipeListItem])
 async def list_recipes(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User | None = Depends(get_optional_user),
 ):
     """
-    Retourne toutes les recettes (visibles par tout utilisateur connecté),
+    Retourne toutes les recettes (visibles par tout utilisateur, connecté ou non),
     version allégée (sans ingrédients/étapes). Triées de la plus récente à la plus ancienne.
     """
     result = await db.execute(
         select(Recipe).order_by(Recipe.created_at.desc())
     )
-    return result.scalars().all()
+    recipes = list(result.scalars().all())
+    await recipe_service.attach_like_metadata(recipes, db, current_user)
+    return recipes
 
 
 @router.get("/{recipe_id}", response_model=RecipeOut)
 async def get_recipe(
     recipe_id: int,
     db: AsyncSession = Depends(get_db),
+    current_user: User | None = Depends(get_optional_user),
+):
+    """Retourne une recette complète avec ingrédients, étapes et tags (visible par tout utilisateur, connecté ou non)."""
+    recipe = await recipe_service.get_or_404(recipe_id, db)
+    await recipe_service.attach_like_metadata(recipe, db, current_user)
+    return recipe
+
+
+@router.post("/{recipe_id}/like", status_code=status.HTTP_200_OK)
+async def like_recipe(
+    recipe_id: int,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Retourne une recette complète avec ingrédients, étapes et tags (visible par tout utilisateur connecté)."""
-    return await recipe_service.get_or_404(recipe_id, db)
+    """Like une recette (idempotent : si déjà likée, ne fait rien et retourne 200)."""
+    await recipe_service.get_or_404(recipe_id, db)
+    await recipe_service.like_recipe(recipe_id, current_user.id, db)
+    return {"status": "ok"}
+
+
+@router.delete("/{recipe_id}/like", status_code=status.HTTP_204_NO_CONTENT)
+async def unlike_recipe(
+    recipe_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Unlike une recette. Lève une 404 si elle n'était pas likée."""
+    await recipe_service.unlike_recipe(recipe_id, current_user.id, db)
 
 
 @router.patch("/{recipe_id}", response_model=RecipeOut)
@@ -153,7 +198,9 @@ async def update_recipe(
     recipe = await recipe_service.get_or_404(recipe_id, db)
     recipe_service.ensure_owner(recipe, current_user)
     recipe = await recipe_service.apply_update(recipe, payload, db)
-    return await recipe_service.get_or_404(recipe.id, db)
+    updated_recipe = await recipe_service.get_or_404(recipe.id, db)
+    await recipe_service.attach_like_metadata(updated_recipe, db, current_user)
+    return updated_recipe
 
 
 @router.delete("/{recipe_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -188,4 +235,6 @@ async def upload_photo(
     recipe.thumbnail_url = await storage_service.save_recipe_photo(recipe, file)
     await db.flush()
 
-    return await recipe_service.get_or_404(recipe_id, db)
+    updated_recipe = await recipe_service.get_or_404(recipe_id, db)
+    await recipe_service.attach_like_metadata(updated_recipe, db, current_user)
+    return updated_recipe
