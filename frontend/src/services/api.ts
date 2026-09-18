@@ -117,6 +117,12 @@ export async function getLikedRecipes(): Promise<RecipeListItem[]> {
     return raw.map(mapRecipeListItem)
 }
 
+/** Fetches the lightweight list of recipes imported by the current user, most recent first. */
+export async function getMyRecipes(): Promise<RecipeListItem[]> {
+    const raw = await request<RawRecipeListItem[]>('/recipes/mine')
+    return raw.map(mapRecipeListItem)
+}
+
 /** Likes a recipe for the current user. */
 export async function likeRecipe(id: number): Promise<void> {
   await request<void>(`/recipes/${id}/like`, { method: 'POST' })

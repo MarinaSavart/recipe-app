@@ -104,6 +104,16 @@ async def get_liked_recipes(user_id: int, db: AsyncSession) -> list[Recipe]:
     return list(result.scalars().all())
 
 
+async def get_own_recipes(user_id: int, db: AsyncSession) -> list[Recipe]:
+    """Recipes imported by the user, from most recently imported to oldest."""
+    result = await db.execute(
+        select(Recipe)
+        .where(Recipe.user_id == user_id)
+        .order_by(Recipe.created_at.desc())
+    )
+    return list(result.scalars().all())
+
+
 def ensure_owner(recipe: Recipe, user: User) -> None:
     """Raises a 403 if the current user isn't the recipe's owner."""
     if recipe.user_id != user.id:

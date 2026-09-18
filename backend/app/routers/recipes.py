@@ -132,6 +132,21 @@ async def list_liked_recipes(
     return recipes
 
 
+@router.get("/mine", response_model=list[RecipeListItem])
+async def list_my_recipes(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Recipes imported by the current user, lightweight version.
+    Sorted from most recently imported to oldest.
+    Declared before /{recipe_id} so "mine" isn't interpreted as an id.
+    """
+    recipes = await recipe_service.get_own_recipes(current_user.id, db)
+    await recipe_service.attach_like_metadata(recipes, db, current_user)
+    return recipes
+
+
 @router.get("/", response_model=list[RecipeListItem])
 async def list_recipes(
     db: AsyncSession = Depends(get_db),

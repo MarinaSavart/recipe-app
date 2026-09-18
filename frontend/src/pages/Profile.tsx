@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { getRecipes, getLikedRecipes } from '../services/api'
+import { getMyRecipes, getLikedRecipes } from '../services/api'
 import { calculateTDEE, calculateMacros } from '../utils/nutritionCalc'
 import { resolveMediaUrl } from '../utils/recipeDisplay'
 import ProfileHeader from '../components/ProfileHeader'
@@ -67,7 +67,7 @@ export default function Profile() {
   })
 
   useEffect(() => {
-    getRecipes().then(setRecipes).catch(console.error)
+    getMyRecipes().then(setRecipes).catch(console.error)
     getLikedRecipes().then(setLikedRecipes).catch(console.error)
   }, [])
 
@@ -122,7 +122,7 @@ export default function Profile() {
     setSavedGoals(true)
     setTimeout(() => setSavedGoals(false), 2000)
   }
-
+  
   return (
     <div className="profile">
       <ProfileHeader
@@ -155,7 +155,7 @@ export default function Profile() {
           <div className="profile__empty-carousel">Aucune recette pour l'instant.</div>
         ) : (
           <div className="profile__carousel">
-            {recipes.map(r => (
+            {recipes.slice(0, 5).map(r => (
               <div
                 key={r.id}
                 className="profile__carousel-card"
