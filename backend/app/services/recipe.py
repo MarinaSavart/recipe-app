@@ -1,9 +1,9 @@
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models.recipe import Ingredient, Recipe, Step, Tag
+from app.models.recipe import Ingredient, Recipe, RecipeLike, Step, Tag
 from app.models.user import User
 from app.schemas.recipe import RecipeCreate, RecipeUpdate
 
@@ -26,6 +26,82 @@ async def get_or_404(recipe_id: int, db: AsyncSession) -> Recipe:
     if not recipe:
         raise HTTPException(status_code=404, detail="Recette introuvable")
     return recipe
+
+
+async def attach_like_metadata(
+    recipes: Recipe | list[Recipe],
+    db: AsyncSession,
+    current_user: User | None,
+) -> None:
+    """
+    Annote chaque recette avec `is_liked` et `likes_count` (attributs transitoires,
+    non persistés) pour que RecipeOut / RecipeListItem puissent les sérialiser.
+    """
+    items = recipes if isinstance(recipes, list) else [recipes]
+    if not items:
+        return
+
+    recipe_ids = [r.id for r in items]
+
+    counts_result = await db.execute(
+        select(RecipeLike.recipe_id, func.count(RecipeLike.id))
+        .where(RecipeLike.recipe_id.in_(recipe_ids))
+        .group_by(RecipeLike.recipe_id)
+    )
+    counts_by_id = dict(counts_result.all())
+
+    liked_ids: set[int] = set()
+    if current_user:
+        liked_result = await db.execute(
+            select(RecipeLike.recipe_id).where(
+                RecipeLike.recipe_id.in_(recipe_ids),
+                RecipeLike.user_id == current_user.id,
+            )
+        )
+        liked_ids = set(liked_result.scalars().all())
+
+    for recipe in items:
+        recipe.likes_count = counts_by_id.get(recipe.id, 0)
+        recipe.is_liked = recipe.id in liked_ids
+
+
+async def like_recipe(recipe_id: int, user_id: int, db: AsyncSession) -> None:
+    """Like idempotent : si le like existe déjà, ne crée pas de doublon."""
+    existing = await db.execute(
+        select(RecipeLike).where(
+            RecipeLike.recipe_id == recipe_id, RecipeLike.user_id == user_id
+        )
+    )
+    if existing.scalar_one_or_none():
+        return
+
+    db.add(RecipeLike(recipe_id=recipe_id, user_id=user_id))
+    await db.flush()
+
+
+async def unlike_recipe(recipe_id: int, user_id: int, db: AsyncSession) -> None:
+    """Supprime un like. Lève une 404 s'il n'existe pas."""
+    result = await db.execute(
+        select(RecipeLike).where(
+            RecipeLike.recipe_id == recipe_id, RecipeLike.user_id == user_id
+        )
+    )
+    like = result.scalar_one_or_none()
+    if not like:
+        raise HTTPException(status_code=404, detail="Like introuvable")
+
+    await db.delete(like)
+
+
+async def get_liked_recipes(user_id: int, db: AsyncSession) -> list[Recipe]:
+    """Recettes likées par l'utilisateur, de la plus récemment likée à la plus ancienne."""
+    result = await db.execute(
+        select(Recipe)
+        .join(RecipeLike, RecipeLike.recipe_id == Recipe.id)
+        .where(RecipeLike.user_id == user_id)
+        .order_by(RecipeLike.created_at.desc())
+    )
+    return list(result.scalars().all())
 
 
 def ensure_owner(recipe: Recipe, user: User) -> None:

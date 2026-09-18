@@ -8,6 +8,7 @@ import RecipeList from './pages/RecipeList'
 import RecipeDetail from './pages/RecipeDetail'
 import RecipeImport from './pages/RecipeImport'
 import RecipeEdit from './pages/RecipeEdit'
+import FavoritesRecipes from './pages/FavoritesRecipes'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import './styles/main.scss'
@@ -23,6 +24,7 @@ function PrivateRoute({ children }: { children: ReactNode }) {
 
 function AppLayout() {
   const [recipeCount, setRecipeCount] = useState(0)
+  const [favoritesCount, setFavoritesCount] = useState(0)
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [theme, setTheme] = useState<Theme>(() => {
@@ -58,6 +60,7 @@ function AppLayout() {
       <div className="layout">
         <Navbar
           recipeCount={recipeCount}
+          favoritesCount={favoritesCount}
           collapsed={collapsed}
           onToggle={handleToggle}
           mobileOpen={mobileOpen}
@@ -70,6 +73,7 @@ function AppLayout() {
             <Route path="/recipes/:id"      element={<RecipeDetail />} />
             <Route path="/recipes/:id/edit" element={<RecipeEdit />} />
             <Route path="/import"           element={<RecipeImport />} />
+            <Route path="/favorites"        element={<FavoritesRecipes onCountChange={setFavoritesCount} />} />
             <Route path="/profile"           element={<Profile />} />
           </Routes>
         </main>

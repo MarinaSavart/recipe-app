@@ -85,6 +85,8 @@ class RecipeOut(RecipeBase):
     ingredients: list[IngredientOut] = []
     steps: list[StepOut] = []
     tags: list[TagOut] = []
+    is_liked: bool
+    likes_count: int
     created_at: datetime
     updated_at: datetime
     model_config = {"from_attributes": True}
@@ -101,6 +103,8 @@ class RecipeListItem(BaseModel):
     proteins_g: Optional[float] = None
     carbs_g: Optional[float] = None
     fats_g: Optional[float] = None
+    is_liked: bool
+    likes_count: int
     created_at: datetime
     model_config = {"from_attributes": True}
 

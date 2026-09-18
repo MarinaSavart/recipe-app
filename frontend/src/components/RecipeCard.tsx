@@ -1,13 +1,29 @@
+import { useState } from 'react'
+import type { MouseEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { RecipeListItem } from '../types/recipe'
+import { likeRecipe, unlikeRecipe } from '../services/api'
 import { platformLabel, resolveMediaUrl } from '../utils/recipeDisplay'
 
 interface RecipeCardProps {
   recipe: RecipeListItem
+  isLiked: boolean
+  onLikeToggle: (id: number) => void
 }
 
-export default function RecipeCard({ recipe }: RecipeCardProps) {
+export default function RecipeCard({ recipe, isLiked, onLikeToggle }: RecipeCardProps) {
   const navigate = useNavigate()
+  const [liked, setLiked] = useState(isLiked)
+
+  function handleLikeClick(e: MouseEvent) {
+    e.stopPropagation()
+    const wasLiked = liked
+    setLiked(!wasLiked)
+    onLikeToggle(recipe.id)
+
+    const request = wasLiked ? unlikeRecipe(recipe.id) : likeRecipe(recipe.id)
+    request.catch(() => setLiked(wasLiked))
+  }
 
   return (
     <div
@@ -59,6 +75,13 @@ export default function RecipeCard({ recipe }: RecipeCardProps) {
               <strong>{Math.round(recipe.fats_g)}</strong> lip.
             </span>
           )}
+          <button
+            className="recipe-card__like-btn"
+            onClick={handleLikeClick}
+            aria-label={liked ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+          >
+            {liked ? '❤️' : '🤍'}
+          </button>
         </div>
       </div>
     </div>

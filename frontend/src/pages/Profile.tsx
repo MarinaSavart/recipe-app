@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { getRecipes } from '../services/api'
+import { getRecipes, getLikedRecipes } from '../services/api'
 import { calculateTDEE, calculateMacros } from '../utils/nutritionCalc'
 import { resolveMediaUrl } from '../utils/recipeDisplay'
 import ProfileHeader from '../components/ProfileHeader'
@@ -15,6 +15,7 @@ export default function Profile() {
   const navigate = useNavigate()
 
   const [recipes, setRecipes] = useState<RecipeListItem[]>([])
+  const [likedRecipes, setLikedRecipes] = useState<RecipeListItem[]>([])
   const [savedMetrics, setSavedMetrics] = useState(false)
   const [savedGoals, setSavedGoals] = useState(false)
 
@@ -66,6 +67,7 @@ export default function Profile() {
 
   useEffect(() => {
     getRecipes().then(setRecipes).catch(console.error)
+    getLikedRecipes().then(setLikedRecipes).catch(console.error)
   }, [])
 
   const tdee = calculateTDEE(metrics)
@@ -176,9 +178,34 @@ export default function Profile() {
       {/* Carousel — Favoris */}
       <div className="profile__section">
         <div className="profile__section-title">Mes favoris</div>
-        <div className="profile__empty-carousel">
-          🚀 Fonctionnalité à venir — tu pourras liker tes recettes préférées.
-        </div>
+        {likedRecipes.length === 0 ? (
+          <div className="profile__empty-carousel">Aucun favori pour l'instant.</div>
+        ) : (
+          <div className="profile__carousel">
+            {likedRecipes.slice(0, 5).map(r => (
+              <div
+                key={r.id}
+                className="profile__carousel-card"
+                onClick={() => navigate(`/recipes/${r.id}`)}
+              >
+                {r.thumbnail_url ? (
+                  <img
+                    src={resolveMediaUrl(r.thumbnail_url)}
+                    alt={r.title}
+                  />
+                ) : (
+                  <div className="profile__carousel-card-placeholder">🍽️</div>
+                )}
+                <div className="profile__carousel-card-body">
+                  <div className="profile__carousel-card-title">{r.title}</div>
+                  {r.calories && (
+                    <div className="profile__carousel-card-meta">{r.calories} kcal / portion</div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

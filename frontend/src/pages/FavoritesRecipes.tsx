@@ -1,21 +1,21 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import RecipeCard from '../components/RecipeCard'
-import { getRecipes } from '../services/api'
+import { getLikedRecipes } from '../services/api'
 import type { RecipeListItem } from '../types/recipe'
 
-interface RecipeListProps {
+interface FavoritesRecipesProps {
   onCountChange: (count: number) => void
 }
 
-export default function RecipeList({ onCountChange }: RecipeListProps) {
+export default function FavoritesRecipes({ onCountChange }: FavoritesRecipesProps) {
   const [recipes, setRecipes] = useState<RecipeListItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const navigate = useNavigate()
 
   useEffect(() => {
-    getRecipes()
+    getLikedRecipes()
       .then((data) => {
         setRecipes(data)
         onCountChange(data.length)
@@ -25,7 +25,9 @@ export default function RecipeList({ onCountChange }: RecipeListProps) {
   }, [])
 
   function handleLikeToggle(id: number) {
-    setRecipes(prev => prev.map(r => r.id === id ? { ...r, isLiked: !r.isLiked } : r))
+    const next = recipes.filter(r => r.id !== id)
+    setRecipes(next)
+    onCountChange(next.length)
   }
 
   if (loading) return (
@@ -46,23 +48,23 @@ export default function RecipeList({ onCountChange }: RecipeListProps) {
   return (
     <>
       <div className="page-header">
-        <h1 className="page-header__title">Mes <em>recettes</em></h1>
+        <h1 className="page-header__title">Mes <em>favoris</em></h1>
         <p className="page-header__sub">
-          Toutes tes recettes importées depuis n'importe quelle plateforme !
+          Toutes les recettes que tu as likées.
         </p>
       </div>
 
       <div className="recipes-grid">
         {recipes.length === 0 ? (
           <div className="empty">
-            <div className="empty__icon">🍳</div>
-            <div className="empty__title">Aucune recette pour l'instant</div>
+            <div className="empty__icon">🤍</div>
+            <div className="empty__title">Aucun favori pour l'instant</div>
             <div className="empty__sub">
               <button
                 className="btn-ghost empty__cta"
-                onClick={() => navigate('/import')}
+                onClick={() => navigate('/')}
               >
-                ⚡ Importer ma première recette
+                📚 Découvrir mes recettes
               </button>
             </div>
           </div>
