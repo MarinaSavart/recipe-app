@@ -45,6 +45,34 @@
   }
 }
 
+// ── Category filters ───────────────────────────────────────────────────────────
+.category-filters {
+  display: flex;
+  gap: $spacing-sm;
+  flex-wrap: wrap;
+  margin-bottom: $spacing-xl;
+
+  &__btn {
+    padding: $spacing-sm $spacing-md;
+    border-radius: $radius-full;
+    border: 1px solid $border;
+    font-size: 13px;
+    color: $muted;
+    transition: all $transition;
+
+    &:hover {
+      border-color: $amber-dim;
+      color: $text;
+    }
+
+    &--active {
+      background: $amber-glow;
+      border-color: $amber-dim;
+      color: $amber;
+    }
+  }
+}
+
 // ── Grille recettes ────────────────────────────────────────────────────────────
 .recipes-grid {
   display: grid;
@@ -572,6 +600,14 @@
 // ── Responsive ─────────────────────────────────────────────────────────────────
 @media (max-width: 768px) {
   .page-header__title { font-size: 26px; }
+
+  .category-filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: $spacing-xs;
+
+    &__btn { flex-shrink: 0; }
+  }
 
   .recipes-grid {
     grid-template-columns: 1fr;
