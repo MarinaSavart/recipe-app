@@ -22,6 +22,7 @@ class Recipe(Base):
     raw_description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # raw extracted description
 
     # Recipe info
+    category: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     servings: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     prep_time_minutes: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     cook_time_minutes: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)

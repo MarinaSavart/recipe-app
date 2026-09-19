@@ -23,6 +23,15 @@ from app.services.extractor import extract_from_url
 router = APIRouter(prefix="/recipes", tags=["recipes"])
 logger = logging.getLogger(__name__)
 
+ALLOWED_CATEGORIES = {
+    "breakfast",
+    "repas",
+    "collation",
+    "dessert",
+    "snack",
+    "boisson",
+}
+
 
 # ── Endpoints ──────────────────────────────────────────────────────────────────
 
@@ -108,7 +117,9 @@ async def import_manual(
         recipe_data,
         db,
         user_id=current_user.id,
-        source_url=payload.source_url,
+        # payload.source_url is a pydantic HttpUrl, not a str — the DB driver
+        # can't bind it directly, so it must be converted before persisting.
+        source_url=str(payload.source_url) if payload.source_url else None,
         source_platform="manual",
     )
 
@@ -149,16 +160,23 @@ async def list_my_recipes(
 
 @router.get("/", response_model=list[RecipeListItem])
 async def list_recipes(
+    category: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User | None = Depends(get_optional_user),
 ):
     """
     Returns all recipes (visible to any user, logged in or not),
     lightweight version (no ingredients/steps). Sorted from newest to oldest.
+    Optionally filtered by category.
     """
-    result = await db.execute(
-        select(Recipe).order_by(Recipe.created_at.desc())
-    )
+    if category is not None and category not in ALLOWED_CATEGORIES:
+        raise HTTPException(status_code=422, detail="Catégorie invalide")
+
+    query = select(Recipe).order_by(Recipe.created_at.desc())
+    if category is not None:
+        query = query.where(Recipe.category == category)
+
+    result = await db.execute(query)
     recipes = list(result.scalars().all())
     await recipe_service.attach_like_metadata(recipes, db, current_user)
     return recipes
@@ -209,6 +227,9 @@ async def update_recipe(
     Updates a recipe (owner only). Only the fields sent are modified (PATCH).
     For ingredients/steps/tags: fully replaced if provided.
     """
+    if payload.category is not None and payload.category not in ALLOWED_CATEGORIES:
+        raise HTTPException(status_code=422, detail="Catégorie invalide")
+
     recipe = await recipe_service.get_or_404(recipe_id, db)
     recipe_service.ensure_owner(recipe, current_user)
     recipe = await recipe_service.apply_update(recipe, payload, db)

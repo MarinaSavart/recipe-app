@@ -18,6 +18,7 @@ Structure JSON obligatoire :
 {
   "title": "string",
   "description": null,
+  "category": "breakfast" | "repas" | "collation" | "dessert" | "snack" | "boisson" | null,
   "servings": 3,
   "prep_time_minutes": 10,
   "cook_time_minutes": 20,
@@ -36,6 +37,12 @@ Structure JSON obligatoire :
   ],
   "tags": ["tag1", "tag2", "tag3"]
 }
+
+RÈGLES CATÉGORIE :
+- Déduire la catégorie depuis le contenu de la recette
+- Valeurs autorisées uniquement : "petit-dejeuner", "dejeuner", "diner", "collation", "dessert", "snack", "boisson"
+- Si aucune catégorie ne correspond clairement : null
+- Une seule catégorie par recette
 
 RÈGLES INGREDIENTS :
 - Extrais TOUS les ingrédients sans exception, y compris ceux des sous-sections (Sauce, Marinade, Garniture, Poulet, Salade...)
@@ -105,6 +112,7 @@ async def parse_recipe(raw_description: str, suggested_title: str | None = None)
     return RecipeCreate(
         title=data["title"],
         description=data.get("description"),
+        category=data.get("category"),
         servings=data.get("servings"),
         prep_time_minutes=data.get("prep_time_minutes"),
         cook_time_minutes=data.get("cook_time_minutes"),
