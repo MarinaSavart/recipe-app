@@ -3,6 +3,7 @@ import type { MouseEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { RecipeListItem } from '../types/recipe'
 import { likeRecipe, unlikeRecipe } from '../services/api'
+import { categoryLabel } from '../utils/categories'
 import { platformLabel, resolveMediaUrl } from '../utils/recipeDisplay'
 
 interface RecipeCardProps {
@@ -51,6 +52,12 @@ export default function RecipeCard({ recipe, isLiked, onLikeToggle }: RecipeCard
         )}
 
         <div className="recipe-card__title">{recipe.title}</div>
+
+        {recipe.category && (
+          <div className="recipe-card__category">
+            {categoryLabel(recipe.category)}
+          </div>
+        )}
 
         {recipe.source_author && (
           <div className="recipe-card__author">@{recipe.source_author}</div>
