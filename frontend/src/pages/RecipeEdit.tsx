@@ -3,6 +3,7 @@ import type { ChangeEvent } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getRecipe, updateRecipe, uploadPhoto } from '../services/api'
 import type { Recipe, Ingredient, Step } from '../types/recipe'
+import { CATEGORIES, type CategoryKey } from '../utils/categories'
 import { resolveMediaUrl } from '../utils/recipeDisplay'
 
 interface EditIngredient extends Omit<Ingredient, 'id'> { id?: number }
@@ -24,6 +25,7 @@ export default function RecipeEdit() {
   // Simple fields
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [category, setCategory] = useState<CategoryKey | null>(null)
   const [servings, setServings] = useState('')
   const [prepTime, setPrepTime] = useState('')
   const [cookTime, setCookTime] = useState('')
@@ -55,6 +57,7 @@ export default function RecipeEdit() {
         setRecipe(data)
         setTitle(data.title)
         setDescription(data.description ?? '')
+        setCategory(data.category as CategoryKey | null)
         setServings(data.servings?.toString() ?? '')
         setPrepTime(data.prep_time_minutes?.toString() ?? '')
         setCookTime(data.cook_time_minutes?.toString() ?? '')
@@ -149,6 +152,7 @@ export default function RecipeEdit() {
       await updateRecipe(recipe.id, {
         title: title.trim(),
         description: description || null,
+        category,
         servings: servings ? parseInt(servings) : null,
         prep_time_minutes: prepTime ? parseInt(prepTime) : null,
         cook_time_minutes: cookTime ? parseInt(cookTime) : null,
@@ -253,6 +257,29 @@ export default function RecipeEdit() {
                   onChange={e => setDescription(e.target.value)}
                   placeholder="Description courte…"
                 />
+              </div>
+            </div>
+
+            <div className="edit-page__full">
+              <div className="edit-field">
+                <label className="edit-field__label">Catégorie</label>
+                <div className="category-filters">
+                  <button
+                    className={`category-filters__btn ${category === null ? 'category-filters__btn--active' : ''}`}
+                    onClick={() => setCategory(null)}
+                  >
+                    Non catégorisé
+                  </button>
+                  {CATEGORIES.map((c) => (
+                    <button
+                      key={c.key}
+                      className={`category-filters__btn ${category === c.key ? 'category-filters__btn--active' : ''}`}
+                      onClick={() => setCategory(c.key)}
+                    >
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
