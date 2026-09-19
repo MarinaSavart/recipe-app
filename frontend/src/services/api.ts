@@ -99,9 +99,10 @@ export async function register(name: string, email: string, password: string): P
 
 // ── Recipes ────────────────────────────────────────────────────────────────────
 
-/** Fetches the lightweight list of all recipes. */
-export async function getRecipes(): Promise<RecipeListItem[]> {
-    const raw = await request<RawRecipeListItem[]>('/recipes/')
+/** Fetches the lightweight list of all recipes, optionally filtered by category. */
+export async function getRecipes(category?: string): Promise<RecipeListItem[]> {
+    const params = category ? `?category=${encodeURIComponent(category)}` : ''
+    const raw = await request<RawRecipeListItem[]>(`/recipes/${params}`)
     return raw.map(mapRecipeListItem)
 }
 
