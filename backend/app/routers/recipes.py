@@ -47,7 +47,12 @@ async def import_from_url(
       1. yt-dlp extracts the description and metadata
       2. Claude parses the description into a structured recipe
       3. We save it to the database and return the recipe
+    A category can optionally be supplied to override Claude's guess,
+    for cases where it can't be reliably inferred from the video.
     """
+    if payload.category is not None and payload.category not in ALLOWED_CATEGORIES:
+        raise HTTPException(status_code=422, detail="Catégorie invalide")
+
     # Step 1: extraction
     try:
         extracted = await extract_from_url(payload.url)
@@ -74,6 +79,9 @@ async def import_from_url(
             detail="Le parsing de la recette a échoué. Réessaie ou utilise l'import manuel.",
         )
 
+    if payload.category is not None:
+        recipe_data.category = payload.category
+
     # Step 3: save
     recipe = await recipe_service.save_recipe(
         recipe_data,
@@ -99,7 +107,12 @@ async def import_manual(
     """
     Manual import: the user pastes the description directly.
     Useful when yt-dlp fails on a private account.
+    A category can optionally be supplied to override Claude's guess,
+    for cases where it can't be reliably inferred from the description.
     """
+    if payload.category is not None and payload.category not in ALLOWED_CATEGORIES:
+        raise HTTPException(status_code=422, detail="Catégorie invalide")
+
     description = payload.description.strip()
     if not description:
         raise HTTPException(status_code=422, detail="La description est vide")
@@ -112,6 +125,9 @@ async def import_manual(
             status_code=422,
             detail="Le parsing de la recette a échoué. Réessaie ou utilise l'import manuel.",
         )
+
+    if payload.category is not None:
+        recipe_data.category = payload.category
 
     recipe = await recipe_service.save_recipe(
         recipe_data,
