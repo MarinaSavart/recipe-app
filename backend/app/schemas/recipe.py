@@ -8,11 +8,13 @@ from pydantic import BaseModel, HttpUrl
 
 class ImportRequest(BaseModel):
     url: HttpUrl
+    category: Optional[str] = None
 
 
 class ImportManualRequest(BaseModel):
     description: str
     source_url: Optional[HttpUrl] = None
+    category: Optional[str] = None
 
 
 # ── Ingredient ─────────────────────────────────────────────────────────────────
