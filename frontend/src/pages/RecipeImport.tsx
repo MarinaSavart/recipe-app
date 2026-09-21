@@ -109,16 +109,20 @@ export default function RecipeImport() {
             ⚡ Import automatique
           </h2>
           <label className="import-page__label">
-            Lien Instagram ou TikTok
+            Lien Instagram, TikTok ou YouTube
           </label>
           <input
             className="import-page__input"
             type="url"
-            placeholder="https://www.instagram.com/reel/..."
+            placeholder={'https://www.instagram.com/reel/...\nou https://www.tiktok.com/...\nou https://www.youtube.com/watch?v=...'}
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleImportUrl()}
           />
+          <p className="import-page__hint">
+            Supporte Instagram, TikTok et YouTube.
+            Pour YouTube, assure-toi que la recette est dans la description de la vidéo.
+          </p>
           <button
             className="btn-primary"
             onClick={handleImportUrl}

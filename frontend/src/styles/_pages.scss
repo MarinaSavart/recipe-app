@@ -342,6 +342,13 @@
     min-height: 140px;
   }
 
+  &__hint {
+    font-size: 12px;
+    color: $muted;
+    margin-top: -#{$spacing-sm};
+    margin-bottom: $spacing-md;
+  }
+
   &__divider {
     display: flex;
     align-items: center;
