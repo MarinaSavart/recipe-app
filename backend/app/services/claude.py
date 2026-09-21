@@ -40,7 +40,7 @@ Structure JSON obligatoire :
 
 RÈGLES CATÉGORIE :
 - Déduire la catégorie depuis le contenu de la recette
-- Valeurs autorisées uniquement : "petit-dejeuner", "dejeuner", "diner", "collation", "dessert", "snack", "boisson"
+- Valeurs autorisées uniquement : "breakfast", "repas", "collation", "dessert", "snack", "boisson"
 - Si aucune catégorie ne correspond clairement : null
 - Une seule catégorie par recette
 
