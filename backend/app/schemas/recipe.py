@@ -8,11 +8,13 @@ from pydantic import BaseModel, HttpUrl
 
 class ImportRequest(BaseModel):
     url: HttpUrl
+    category: Optional[str] = None
 
 
 class ImportManualRequest(BaseModel):
     description: str
     source_url: Optional[HttpUrl] = None
+    category: Optional[str] = None
 
 
 # ── Ingredient ─────────────────────────────────────────────────────────────────
@@ -64,6 +66,7 @@ class RecipeBase(BaseModel):
     source_platform: Optional[str] = None
     source_author: Optional[str] = None
     thumbnail_url: Optional[str] = None
+    category: str | None = None
     servings: Optional[int] = None
     prep_time_minutes: Optional[int] = None
     cook_time_minutes: Optional[int] = None
@@ -98,6 +101,7 @@ class RecipeListItem(BaseModel):
     source_platform: Optional[str] = None
     source_author: Optional[str] = None
     thumbnail_url: Optional[str] = None
+    category: str | None = None
     servings: Optional[int] = None
     calories: Optional[float] = None
     proteins_g: Optional[float] = None
@@ -112,6 +116,7 @@ class RecipeUpdate(BaseModel):
     # all fields optional — only what's sent gets updated
     title: Optional[str] = None
     description: Optional[str] = None
+    category: str | None = None
     servings: Optional[int] = None
     prep_time_minutes: Optional[int] = None
     cook_time_minutes: Optional[int] = None

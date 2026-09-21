@@ -99,9 +99,10 @@ export async function register(name: string, email: string, password: string): P
 
 // ── Recipes ────────────────────────────────────────────────────────────────────
 
-/** Fetches the lightweight list of all recipes. */
-export async function getRecipes(): Promise<RecipeListItem[]> {
-    const raw = await request<RawRecipeListItem[]>('/recipes/')
+/** Fetches the lightweight list of all recipes, optionally filtered by category. */
+export async function getRecipes(category?: string): Promise<RecipeListItem[]> {
+    const params = category ? `?category=${encodeURIComponent(category)}` : ''
+    const raw = await request<RawRecipeListItem[]>(`/recipes/${params}`)
     return raw.map(mapRecipeListItem)
 }
 
@@ -133,22 +134,23 @@ export async function unlikeRecipe(id: number): Promise<void> {
   await request<void>(`/recipes/${id}/like`, { method: 'DELETE' })
 }
 
-/** Imports a recipe automatically from an Instagram or TikTok URL. */
-export async function importFromUrl(url: string): Promise<Recipe> {
+/** Imports a recipe automatically from an Instagram or TikTok URL, with an optional category override. */
+export async function importFromUrl(url: string, category?: string): Promise<Recipe> {
   const raw = await request<RawRecipe>('/recipes/import', {
     method: 'POST',
-    body: JSON.stringify({ url }),
+    body: JSON.stringify({ url, category }),
   })
   return mapRecipe(raw)
 }
 
-/** Imports a recipe from a manually pasted description, with an optional source URL. */
-export async function importManual(description: string, sourceUrl?: string): Promise<Recipe> {
+/** Imports a recipe from a manually pasted description, with an optional source URL and category override. */
+export async function importManual(description: string, sourceUrl?: string, category?: string): Promise<Recipe> {
   const raw = await request<RawRecipe>('/recipes/import/manual', {
     method: 'POST',
     body: JSON.stringify({
       description,
       source_url: sourceUrl,
+      category,
     }),
   })
   return mapRecipe(raw)

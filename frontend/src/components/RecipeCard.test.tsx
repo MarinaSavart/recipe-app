@@ -25,6 +25,7 @@ function makeRecipe(overrides: Partial<RecipeListItem> = {}): RecipeListItem {
     source_platform: null,
     source_author: null,
     thumbnail_url: null,
+    category: null,
     servings: 2,
     calories: 500,
     proteins_g: 40,

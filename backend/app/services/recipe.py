@@ -145,6 +145,7 @@ async def save_recipe(
         source_platform=source_platform,
         source_author=source_author,
         thumbnail_url=thumbnail_url,
+        category=recipe_data.category,
         servings=recipe_data.servings,
         prep_time_minutes=recipe_data.prep_time_minutes,
         cook_time_minutes=recipe_data.cook_time_minutes,
@@ -181,7 +182,7 @@ async def apply_update(recipe: Recipe, payload: RecipeUpdate, db: AsyncSession) 
     update_data = payload.model_dump(exclude_unset=True)
 
     # Simple fields
-    for field in ["title", "description", "servings", "prep_time_minutes",
+    for field in ["title", "description", "category", "servings", "prep_time_minutes",
                   "cook_time_minutes", "calories", "proteins_g", "carbs_g", "fats_g"]:
         if field in update_data:
             setattr(recipe, field, update_data[field])

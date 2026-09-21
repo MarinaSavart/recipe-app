@@ -36,6 +36,7 @@ export interface Recipe {
   source_platform: string | null
   source_author: string | null
   thumbnail_url: string | null
+  category: string | null
   servings: number | null
   prep_time_minutes: number | null
   cook_time_minutes: number | null
@@ -59,6 +60,7 @@ export interface RecipeListItem {
   source_platform: string | null
   source_author: string | null
   thumbnail_url: string | null
+  category: string | null
   servings: number | null
   calories: number | null
   proteins_g: number | null
@@ -73,6 +75,7 @@ export interface RecipeListItem {
 export interface UpdateRecipePayload {
   title: string
   description: string | null
+  category: string | null
   servings: number | null
   prep_time_minutes: number | null
   cook_time_minutes: number | null

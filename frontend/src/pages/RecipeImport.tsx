@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { importFromUrl, importManual } from '../services/api'
+import { CATEGORIES, type CategoryKey } from '../utils/categories'
 
 type ToastType = 'success' | 'error'
 
@@ -22,6 +23,10 @@ export default function RecipeImport() {
   const [sourceUrl, setSourceUrl] = useState('')
   const [loadingManual, setLoadingManual] = useState(false)
 
+  // Optional category, shared between both import modes — useful when the
+  // video doesn't make it clear whether it's a meal, dessert, snack, etc.
+  const [category, setCategory] = useState<CategoryKey | null>(null)
+
   const [toast, setToast] = useState<Toast | null>(null)
 
   /** Shows a transient toast notification. */
@@ -35,7 +40,7 @@ export default function RecipeImport() {
     if (!url.trim()) return
     setLoadingUrl(true)
     try {
-      const recipe = await importFromUrl(url.trim())
+      const recipe = await importFromUrl(url.trim(), category ?? undefined)
       showToast(`"${recipe.title}" importée !`)
       setTimeout(() => navigate(`/recipes/${recipe.id}`), 1000)
     } catch (e: unknown) {
@@ -50,7 +55,7 @@ export default function RecipeImport() {
     if (!description.trim()) return
     setLoadingManual(true)
     try {
-      const recipe = await importManual(description.trim(), sourceUrl || undefined)
+      const recipe = await importManual(description.trim(), sourceUrl || undefined, category ?? undefined)
       showToast(`"${recipe.title}" importée !`)
       setTimeout(() => navigate(`/recipes/${recipe.id}`), 1000)
     } catch (e: unknown) {
@@ -70,6 +75,33 @@ export default function RecipeImport() {
       </div>
 
       <div className="import-page">
+
+        {/* Category override — applies to whichever import mode is used below */}
+        <div className="import-page__card">
+          <h2 className="import-page__card-title">
+            🏷️ Catégorie
+          </h2>
+          <label className="import-page__label">
+            Laisse vide pour laisser l'IA deviner, ou choisis-en une si la vidéo ne le précise pas
+          </label>
+          <div className="category-filters">
+            <button
+              className={`category-filters__btn ${category === null ? 'category-filters__btn--active' : ''}`}
+              onClick={() => setCategory(null)}
+            >
+              Auto
+            </button>
+            {CATEGORIES.map((c) => (
+              <button
+                key={c.key}
+                className={`category-filters__btn ${category === c.key ? 'category-filters__btn--active' : ''}`}
+                onClick={() => setCategory(c.key)}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Import URL */}
         <div className="import-page__card">
