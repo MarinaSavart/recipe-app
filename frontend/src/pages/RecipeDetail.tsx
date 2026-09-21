@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom'
 import MacroBox from '../components/MacroBox'
 import { getRecipe, deleteRecipe, likeRecipe, unlikeRecipe } from '../services/api'
 import type { Recipe } from '../types/recipe'
-import { formatQty, platformLabel, resolveMediaUrl } from '../utils/recipeDisplay'
+import { formatQty, resolveMediaUrl } from '../utils/recipeDisplay'
+import { getPlatformLabel } from '../utils/platforms'
 
 /** Full recipe view: details, macros, portions selector, ingredients, steps, and actions. */
 export default function RecipeDetail() {
@@ -100,7 +101,7 @@ export default function RecipeDetail() {
 
       {/* Header */}
       {recipe.source_platform && (
-        <div className="detail__platform">{platformLabel(recipe.source_platform)}</div>
+        <div className="detail__platform">{getPlatformLabel(recipe.source_platform)}</div>
       )}
       <h1 className="detail__title">{recipe.title}</h1>
       {recipe.source_author && (

@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom'
 import type { RecipeListItem } from '../types/recipe'
 import { likeRecipe, unlikeRecipe } from '../services/api'
 import { categoryLabel } from '../utils/categories'
-import { platformLabel, resolveMediaUrl } from '../utils/recipeDisplay'
+import { getPlatformLabel } from '../utils/platforms'
+import { resolveMediaUrl } from '../utils/recipeDisplay'
 
 interface RecipeCardProps {
   recipe: RecipeListItem
@@ -47,7 +48,7 @@ export default function RecipeCard({ recipe, isLiked, onLikeToggle }: RecipeCard
       <div className="recipe-card__body">
         {recipe.source_platform && (
           <div className="recipe-card__platform">
-            {platformLabel(recipe.source_platform)}
+            {getPlatformLabel(recipe.source_platform)}
           </div>
         )}
 

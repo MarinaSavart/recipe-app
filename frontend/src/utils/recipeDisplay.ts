@@ -13,19 +13,6 @@ export function resolveMediaUrl(url: string): string {
 }
 
 /**
- * Returns the display label (with emoji) for a recipe's source platform.
- *
- * @param platform - The source platform key ("instagram", "tiktok", "manual"), or null
- * @returns The human-readable label, or an empty string if unknown
- */
-export function platformLabel(platform: string | null): string {
-  if (platform === 'instagram') return '📸 Instagram'
-  if (platform === 'tiktok') return '🎵 TikTok'
-  if (platform === 'manual') return '✍️ Manuel'
-  return platform ?? ''
-}
-
-/**
  * Formats an ingredient quantity scaled to a chosen number of portions.
  * The base quantity is defined for `servings` portions and is rescaled
  * to `multiplier` portions.
