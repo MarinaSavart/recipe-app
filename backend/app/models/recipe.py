@@ -16,7 +16,7 @@ class Recipe(Base):
 
     # Source
     source_url: Mapped[Optional[str]] = mapped_column(String(2048), nullable=True)
-    source_platform: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # "instagram" | "tiktok" | "manual"
+    source_platform: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # "instagram" | "tiktok" | "youtube" | "manual"
     source_author: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     thumbnail_url: Mapped[Optional[str]] = mapped_column(String(2048), nullable=True)
     raw_description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # raw extracted description
