@@ -81,7 +81,7 @@ async def parse_recipe(raw_description: str, suggested_title: str | None = None)
     full_prompt = f"{SYSTEM_PROMPT}\n\nVoici la description à parser :\n\n{user_content}"
 
     # Call to Ollama — stream:false so we wait for the full response
-    async with httpx.AsyncClient(timeout=120.0) as client:
+    async with httpx.AsyncClient(timeout=180.0) as client:
         response = await client.post(
             OLLAMA_URL,
             json={
