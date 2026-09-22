@@ -36,7 +36,7 @@ export default function RecipeList({ onCountChange }: RecipeListProps) {
   return (
     <>
       <div className="page-header">
-        <h1 className="page-header__title">Mes <em>recettes</em></h1>
+        <h1 className="page-header__title">Toutes les <em>recettes</em></h1>
         <p className="page-header__sub">
           Toutes tes recettes importées depuis n'importe quelle plateforme !
         </p>
