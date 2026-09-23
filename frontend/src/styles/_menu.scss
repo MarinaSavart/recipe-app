@@ -255,8 +255,8 @@
     cursor: pointer;
     transition: color $transition, border-color $transition;
 
+    &--danger { color: #e57373; border-color: $danger; }
     &:hover { color: $text; border-color: $amber-dim; }
-    &--danger:hover { color: #e57373; border-color: $danger; }
     &:disabled { opacity: 0.4; cursor: not-allowed; }
   }
 }
