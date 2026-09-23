@@ -1,0 +1,439 @@
+@use 'variables' as *;
+
+// ── Liste des menus ────────────────────────────────────────────────────────────
+.menu-list {
+  max-width: 820px;
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: $spacing-md;
+    flex-wrap: wrap;
+  }
+
+  &__items {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+  }
+
+  &__item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: $spacing-md;
+    background: $card;
+    border: 1px solid $border;
+    border-radius: $radius-lg;
+    padding: $spacing-md $spacing-lg;
+    transition: border-color $transition;
+
+    &:hover { border-color: $amber-dim; }
+  }
+
+  &__info    { min-width: 0; }
+  &__name    { font-family: $font-display; font-size: 18px; margin-bottom: 2px; }
+  &__meta    { font-size: 12px; color: $muted; }
+  &__actions { display: flex; gap: $spacing-sm; flex-shrink: 0; }
+}
+
+// ── Création de menu ───────────────────────────────────────────────────────────
+.menu-create {
+  max-width: 640px;
+
+  &__card {
+    background: $card;
+    border: 1px solid $border;
+    border-radius: $radius-lg;
+    padding: $spacing-xl;
+  }
+
+  &__label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: $muted;
+    margin-bottom: $spacing-sm;
+  }
+
+  &__input {
+    width: 100%;
+    background: $surface;
+    border: 1px solid $border;
+    border-radius: $radius-md;
+    color: $text;
+    font-family: $font-body;
+    font-size: 14px;
+    padding: $spacing-sm $spacing-md;
+    outline: none;
+    transition: border-color $transition;
+    margin-bottom: $spacing-lg;
+
+    &:focus { border-color: $amber-dim; }
+    &::placeholder { color: $muted; }
+  }
+
+  &__field { margin-bottom: $spacing-lg; }
+
+  &__submit {
+    width: 100%;
+    padding: 14px;
+    margin-top: $spacing-sm;
+  }
+
+  &__hint {
+    font-size: 12px;
+    color: $muted;
+    margin-top: $spacing-sm;
+    text-align: center;
+
+    &--left { text-align: left; margin: -#{$spacing-md} 0 $spacing-lg; }
+  }
+  &__error { font-size: 12px; color: #e57373; margin-bottom: $spacing-md; }
+}
+
+// ── Détail d'un menu ───────────────────────────────────────────────────────────
+.menu-detail {
+  &__header { margin-bottom: $spacing-md; }
+
+  &__count {
+    font-size: 13px;
+    color: $muted;
+    margin-top: $spacing-xs;
+
+    &--off { color: #e67e22; }
+  }
+
+  &__group {
+    max-width: 820px;
+    margin-bottom: $spacing-lg;
+  }
+
+  &__group-title {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: $muted;
+    margin-bottom: $spacing-sm;
+    padding-bottom: $spacing-xs;
+    border-bottom: 1px solid $border;
+  }
+
+  &__recipes {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+    max-width: 820px;
+  }
+
+  &__name {
+    width: 100%;
+    max-width: 640px;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: $radius-md;
+    color: $text;
+    font-family: $font-display;
+    font-size: 32px;
+    font-weight: 700;
+    padding: $spacing-xs $spacing-sm;
+    margin-left: -#{$spacing-sm};
+    outline: none;
+    transition: border-color $transition;
+
+    &:hover { border-color: $border; }
+    &:focus { border-color: $amber-dim; }
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-sm;
+    margin-bottom: $spacing-lg;
+  }
+
+  &__toggle--active {
+    border-color: $amber-dim;
+    color: $amber;
+  }
+}
+
+// ── Liste des recettes d'un menu ───────────────────────────────────────────────
+.menu-recipe {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  background: $card;
+  border: 1px solid $border;
+  border-radius: $radius-lg;
+  padding: $spacing-sm;
+  transition: border-color $transition;
+
+  &:hover { border-color: $amber-dim; }
+
+  &__thumb {
+    width: 96px;
+    aspect-ratio: 16 / 9;
+    flex-shrink: 0;
+    object-fit: cover;
+    border-radius: $radius-md;
+
+    &--placeholder {
+      background: $surface;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+  }
+
+  &__body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__title {
+    display: block;
+    max-width: 100%;
+    background: none;
+    border: none;
+    padding: 0;
+    text-align: left;
+    color: $text;
+    font-size: 15px;
+    font-weight: 500;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color $transition;
+
+    &:is(button):hover { color: $amber; }
+    &--missing { color: $muted; font-style: italic; }
+  }
+
+  &__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: $spacing-sm;
+    font-size: 12px;
+  }
+
+  &__meals {
+    background: $amber-glow;
+    border: 1px solid $amber-dim;
+    border-radius: $radius-full;
+    color: $amber;
+    padding: 1px $spacing-sm;
+    font-weight: 500;
+  }
+
+  &__macros { color: $muted; }
+
+  &__actions {
+    display: flex;
+    gap: $spacing-xs;
+    flex-shrink: 0;
+  }
+
+  &__action-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    border: 1px solid $border;
+    border-radius: $radius-md;
+    color: $muted;
+    background: none;
+    cursor: pointer;
+    transition: color $transition, border-color $transition;
+
+    &:hover { color: $text; border-color: $amber-dim; }
+    &--danger:hover { color: #e57373; border-color: $danger; }
+    &:disabled { opacity: 0.4; cursor: not-allowed; }
+  }
+}
+
+// ── Récapitulatif nutritionnel ─────────────────────────────────────────────────
+.menu-summary {
+  margin-bottom: $spacing-lg;
+
+  &--empty { font-size: 13px; color: $muted; }
+
+  &__intro { font-size: 12px; color: $muted; margin-bottom: $spacing-sm; }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: $spacing-sm;
+  }
+
+  &__macro {
+    background: $card;
+    border: 1px solid $border;
+    border-radius: $radius-md;
+    padding: $spacing-sm $spacing-md;
+    text-align: center;
+
+    &--ok      { border-color: #27ae60; }
+    &--warning { border-color: #e67e22; }
+  }
+
+  &__label  { font-size: 11px; color: $muted; margin-bottom: 4px; }
+  &__value  { font-family: $font-display; font-size: 22px; color: $amber; }
+  &__unit   { font-family: $font-body; font-size: 11px; color: $muted; }
+  &__target { font-size: 11px; color: $muted; margin-top: 2px; }
+}
+
+// ── Modal sélection recette ────────────────────────────────────────────────────
+.recipe-picker {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-lg;
+
+  &__panel {
+    background: $surface;
+    border: 1px solid $border;
+    border-radius: $radius-xl;
+    width: 100%;
+    max-width: 500px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__header {
+    padding: $spacing-lg;
+    border-bottom: 1px solid $border;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  &__title { font-family: $font-display; font-size: 18px; }
+
+  &__close {
+    color: $muted;
+    font-size: 16px;
+    transition: color $transition;
+
+    &:hover { color: $text; }
+  }
+
+  &__search {
+    padding: $spacing-md $spacing-lg;
+    border-bottom: 1px solid $border;
+  }
+
+  &__categories {
+    display: flex;
+    gap: $spacing-xs;
+    overflow-x: auto;
+    padding: $spacing-sm 0 2px;
+  }
+
+  &__category {
+    flex-shrink: 0;
+    padding: 4px $spacing-sm;
+    border-radius: $radius-full;
+    border: 1px solid $border;
+    font-size: 11px;
+    color: $muted;
+    transition: all $transition;
+
+    &:hover { border-color: $amber-dim; color: $text; }
+
+    &--active {
+      background: $amber-glow;
+      border-color: $amber-dim;
+      color: $amber;
+    }
+  }
+
+  &__input {
+    width: 100%;
+    background: $card;
+    border: 1px solid $border;
+    border-radius: $radius-md;
+    color: $text;
+    font-family: $font-body;
+    font-size: 14px;
+    padding: $spacing-sm $spacing-md;
+    outline: none;
+
+    &:focus { border-color: $amber-dim; }
+  }
+
+  &__list {
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  &__empty {
+    padding: $spacing-lg;
+    text-align: center;
+    font-size: 13px;
+    color: $muted;
+  }
+
+  &__item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    padding: $spacing-sm $spacing-lg;
+    text-align: left;
+    color: $text;
+    cursor: pointer;
+    transition: background $transition;
+    border-bottom: 1px solid $border;
+
+    &:hover    { background: $card; }
+    &:disabled { opacity: 0.5; cursor: wait; }
+  }
+
+  &__item-thumb {
+    width: 48px;
+    height: 36px;
+    flex-shrink: 0;
+    object-fit: cover;
+    border-radius: $radius-sm;
+
+    &--placeholder {
+      background: $card;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+  }
+
+  &__item-title  { font-size: 13px; flex: 1; }
+  &__item-macros { font-size: 11px; color: $amber; white-space: nowrap; }
+}
+
+// ── Responsive ─────────────────────────────────────────────────────────────────
+@media (max-width: 768px) {
+  .menu-summary__grid { grid-template-columns: repeat(2, 1fr); }
+
+  .menu-recipe__thumb { width: 64px; }
+
+  .menu-list__item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .menu-detail__name { font-size: 24px; }
+}
