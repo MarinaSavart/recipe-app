@@ -28,3 +28,20 @@ class TokenOut(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserOut
+
+# ── Nutritional goals ──────────────────────────────────────────────────────────
+
+class UserGoalsBase(BaseModel):
+    calories: float | None = Field(default=None, ge=0)
+    proteins_g: float | None = Field(default=None, ge=0)
+    carbs_g: float | None = Field(default=None, ge=0)
+    fats_g: float | None = Field(default=None, ge=0)
+    meals_per_day: int = Field(default=3, ge=1, le=6)
+
+
+class UserGoalsUpdate(UserGoalsBase):
+    pass
+
+
+class UserGoalsOut(UserGoalsBase):
+    model_config = {"from_attributes": True}

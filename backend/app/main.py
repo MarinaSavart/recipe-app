@@ -10,6 +10,9 @@ from app.routers.recipes import router as recipes_router
 
 from app.routers.auth import router as auth_router
 from app.models import user as user_models  # noqa: F401
+from app.models import menu as menu_models  # noqa: F401
+from app.routers.menus import router as menus_router
+from app.routers.users import router as users_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -45,6 +48,8 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 # ── Routers ────────────────────────────────────────────────────────────────────
 app.include_router(recipes_router)
 app.include_router(auth_router)
+app.include_router(menus_router)
+app.include_router(users_router)
 
 # ── Health check ───────────────────────────────────────────────────────────────
 @app.get("/health")
