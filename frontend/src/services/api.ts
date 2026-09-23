@@ -290,11 +290,14 @@ export async function addMenuItem(menuId: number, recipeId: number): Promise<Men
   return mapMenu(raw)
 }
 
-/** Replaces a recipe of a menu and returns the updated menu. */
-export async function updateMenuItem(menuId: number, itemId: number, recipeId: number): Promise<Menu> {
+/**
+ * Replaces a recipe of a menu, or changes its portions (same recipe, new count),
+ * and returns the updated menu. Without `portions`, the recipe's own servings are used.
+ */
+export async function updateMenuItem(menuId: number, itemId: number, recipeId: number, portions?: number): Promise<Menu> {
   const raw = await request<RawMenu>(`/menus/${menuId}/items/${itemId}`, {
     method: 'PATCH',
-    body: JSON.stringify({ recipe_id: recipeId }),
+    body: JSON.stringify({ recipe_id: recipeId, portions }),
   })
   return mapMenu(raw)
 }

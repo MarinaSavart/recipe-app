@@ -122,6 +122,13 @@ export default function MenuDetail() {
     })
   }
 
+  /** Changes how many portions of a recipe the menu uses. */
+  function handlePortionsChange(item: MenuItem, portions: number) {
+    if (!item.recipe) return Promise.resolve(false)
+    const recipeId = item.recipe.id
+    return mutate(() => updateMenuItem(menu.id, item.id, recipeId, portions))
+  }
+
   async function handleRename() {
     if (!trimmedName) return
     await mutate(() => updateMenu(menu.id, { name: trimmedName }), 'Menu enregistré ✓')
@@ -199,6 +206,7 @@ export default function MenuDetail() {
                   disabled={busy}
                   onReplace={i => setPicker({ mode: 'replace', item: i })}
                   onDelete={handleDeleteItem}
+                  onPortionsChange={handlePortionsChange}
                 />
               ))}
             </ul>
