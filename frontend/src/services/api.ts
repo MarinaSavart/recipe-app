@@ -1,4 +1,6 @@
 import type { Recipe, RecipeListItem, UpdateRecipePayload } from "../types/recipe"
+import type { Menu, MenuGenerateParams, MenuItem, MenuListItem } from "../types/menu"
+import { DEFAULT_GOALS, type SyncedNutritionalGoals } from "../types/profil"
 
 // The backend returns is_liked / likes_count in snake_case (like the rest of the JSON);
 // we convert them here to isLiked / likesCount to follow the camelCase convention
@@ -188,4 +190,153 @@ export async function uploadPhoto(id: number, file: File): Promise<Recipe> {
   }
   const raw: RawRecipe = await res.json()
   return mapRecipe(raw)
+}
+
+// ── Menus ──────────────────────────────────────────────────────────────────────
+
+// Menus are internal frontend objects: their snake_case API fields are mapped to camelCase.
+interface RawMenuItem {
+  id: number
+  portions: number
+  position: number
+  recipe: RawRecipeListItem | null
+}
+
+interface RawMenu {
+  id: number
+  name: string
+  meals_count: number
+  created_at: string
+  updated_at: string
+  items: RawMenuItem[]
+}
+
+interface RawMenuListItem {
+  id: number
+  name: string
+  meals_count: number
+  recipes_count: number
+  created_at: string
+}
+
+/** Converts a raw API menu item into the frontend's MenuItem shape. */
+function mapMenuItem(raw: RawMenuItem): MenuItem {
+  return {
+    id: raw.id,
+    portions: raw.portions,
+    position: raw.position,
+    recipe: raw.recipe ? mapRecipeListItem(raw.recipe) : null,
+  }
+}
+
+/** Converts a raw API menu into the frontend's Menu shape. */
+function mapMenu(raw: RawMenu): Menu {
+  return {
+    id: raw.id,
+    name: raw.name,
+    mealsCount: raw.meals_count,
+    createdAt: raw.created_at,
+    updatedAt: raw.updated_at,
+    items: raw.items.map(mapMenuItem),
+  }
+}
+
+/** Fetches the current user's menus, most recent first. */
+export async function getMenus(): Promise<MenuListItem[]> {
+  const raw = await request<RawMenuListItem[]>('/menus/')
+  return raw.map(m => ({
+    id: m.id,
+    name: m.name,
+    mealsCount: m.meals_count,
+    recipesCount: m.recipes_count,
+    createdAt: m.created_at,
+  }))
+}
+
+/** Asks the backend (Ollama) to generate and save a menu covering the given number of meals. */
+export async function generateMenu(params: MenuGenerateParams): Promise<Menu> {
+  const raw = await request<RawMenu>('/menus/generate', {
+    method: 'POST',
+    body: JSON.stringify({ name: params.name, meals_count: params.mealsCount }),
+  })
+  return mapMenu(raw)
+}
+
+/** Fetches a full menu with its recipes. */
+export async function getMenu(id: number): Promise<Menu> {
+  return mapMenu(await request<RawMenu>(`/menus/${id}`))
+}
+
+/** Renames a menu. */
+export async function updateMenu(id: number, data: { name: string }): Promise<Menu> {
+  const raw = await request<RawMenu>(`/menus/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  })
+  return mapMenu(raw)
+}
+
+/** Deletes a menu. */
+export async function deleteMenu(id: number): Promise<void> {
+  await request<void>(`/menus/${id}`, { method: 'DELETE' })
+}
+
+/** Adds a recipe to a menu (covering one batch of its portions) and returns the updated menu. */
+export async function addMenuItem(menuId: number, recipeId: number): Promise<Menu> {
+  const raw = await request<RawMenu>(`/menus/${menuId}/items`, {
+    method: 'POST',
+    body: JSON.stringify({ recipe_id: recipeId }),
+  })
+  return mapMenu(raw)
+}
+
+/** Replaces a recipe of a menu and returns the updated menu. */
+export async function updateMenuItem(menuId: number, itemId: number, recipeId: number): Promise<Menu> {
+  const raw = await request<RawMenu>(`/menus/${menuId}/items/${itemId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ recipe_id: recipeId }),
+  })
+  return mapMenu(raw)
+}
+
+/** Removes a recipe from a menu. */
+export async function deleteMenuItem(menuId: number, itemId: number): Promise<void> {
+  await request<void>(`/menus/${menuId}/items/${itemId}`, { method: 'DELETE' })
+}
+
+// ── User goals ─────────────────────────────────────────────────────────────────
+
+interface RawUserGoals {
+  calories: number | null
+  proteins_g: number | null
+  carbs_g: number | null
+  fats_g: number | null
+  meals_per_day: number
+}
+
+/** Fetches the user's nutritional goals saved on the backend, or null if none were saved yet. */
+export async function getUserGoals(): Promise<SyncedNutritionalGoals | null> {
+  const raw = await request<RawUserGoals | null>('/users/me/goals')
+  if (!raw) return null
+  return {
+    calories: raw.calories ?? DEFAULT_GOALS.calories,
+    proteinsG: raw.proteins_g ?? DEFAULT_GOALS.proteinsG,
+    carbsG: raw.carbs_g ?? DEFAULT_GOALS.carbsG,
+    fatsG: raw.fats_g ?? DEFAULT_GOALS.fatsG,
+    mealsPerDay: raw.meals_per_day,
+  }
+}
+
+/** Saves the user's nutritional goals on the backend (used for menu generation). */
+export async function saveUserGoals(goals: SyncedNutritionalGoals): Promise<void> {
+  await request<RawUserGoals>('/users/me/goals', {
+    method: 'PUT',
+    body: JSON.stringify({
+      calories: goals.calories,
+      proteins_g: goals.proteinsG,
+      carbs_g: goals.carbsG,
+      fats_g: goals.fatsG,
+      meals_per_day: goals.mealsPerDay,
+    }),
+  })
 }

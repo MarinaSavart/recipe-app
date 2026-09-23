@@ -19,6 +19,9 @@ export interface NutritionalGoals {
   mealsPerDay: number
 }
 
+/** The part of the nutritional goals synced with the backend (the goal preset stays local). */
+export type SyncedNutritionalGoals = Omit<NutritionalGoals, 'goal'>
+
 /** Selectable nutritional goal presets, shown as buttons in the profile page. */
 export const GOALS = [
   { key: 'maintenance',  label: '⚖️ Maintenance' },
