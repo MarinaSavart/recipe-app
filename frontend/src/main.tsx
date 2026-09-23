@@ -13,6 +13,9 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import './styles/main.scss'
 import Profile from './pages/Profile'
+import MenuList from './pages/MenuList'
+import MenuCreate from './pages/MenuCreate'
+import MenuDetail from './pages/MenuDetail'
 
 type Theme = 'dark' | 'light'
 
@@ -76,6 +79,9 @@ function AppLayout() {
             <Route path="/import"           element={<RecipeImport />} />
             <Route path="/favorites"        element={<FavoritesRecipes onCountChange={setFavoritesCount} />} />
             <Route path="/profile"           element={<Profile />} />
+            <Route path="/menus"            element={<MenuList />} />
+            <Route path="/menus/create"     element={<MenuCreate />} />
+            <Route path="/menus/:id"        element={<MenuDetail />} />
           </Routes>
         </main>
       </div>
