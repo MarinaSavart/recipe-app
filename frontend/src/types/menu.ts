@@ -41,5 +41,14 @@ export interface MealNutrition {
   fatsG: number
 }
 
-/** Only recipes of this category can be put in a menu. */
+/** Category of main meals: used by generation and counted in the menu's meals (other categories are extras). */
 export const MENU_CATEGORY = 'repas'
+
+/** A line of a menu's shopping list (ingredients merged by name and unit). */
+export interface ShoppingListItem {
+  name: string
+  quantity: number | null  // total for the menu's portions, null if not measurable
+  unit: string | null
+  extras: string[]         // quantities that couldn't be added up, as written
+  recipes: string[]        // titles of the recipes that need this ingredient
+}

@@ -106,6 +106,8 @@
     &--off { color: #e67e22; }
   }
 
+  &__main { min-width: 0; }
+
   &__group {
     max-width: 820px;
     margin-bottom: $spacing-lg;
@@ -232,6 +234,7 @@
     padding: 1px $spacing-sm;
     font-size: 12px;
     font-weight: 500;
+    white-space: nowrap;
     cursor: pointer;
     transition: border-color $transition;
 
@@ -332,6 +335,176 @@
   &__value  { font-family: $font-display; font-size: 22px; color: $amber; }
   &__unit   { font-family: $font-body; font-size: 11px; color: $muted; }
   &__target { font-size: 11px; color: $muted; margin-top: 2px; }
+}
+
+// ── Liste de courses ───────────────────────────────────────────────────────────
+.shopping-list {
+  max-width: 820px;
+  margin-top: $spacing-sm;
+  scroll-margin-top: $spacing-lg;
+  background: $card;
+  border: 1px solid $border;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: $spacing-md;
+  }
+
+  &__title { font-family: $font-display; font-size: 20px; line-height: 1.2; }
+  &__hint  { font-size: 12px; color: $muted; margin-top: 2px; }
+  &__empty { font-size: 13px; color: $muted; }
+
+  &__close {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid $border;
+    border-radius: 50%;
+    color: $muted;
+    font-size: 16px;
+    flex-shrink: 0;
+    transition: color $transition, border-color $transition;
+
+    &:hover { color: $text; border-color: $amber-dim; }
+  }
+
+  // Progress: ticked items / total
+  &__progress {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    margin-bottom: $spacing-md;
+  }
+
+  &__progress-bar {
+    flex: 1;
+    height: 4px;
+    background: $border;
+    border-radius: $radius-full;
+    overflow: hidden;
+  }
+
+  &__progress-fill {
+    height: 100%;
+    background: $amber;
+    border-radius: $radius-full;
+    transition: width $transition-layout;
+  }
+
+  &__progress-label {
+    font-size: 11px;
+    color: $muted;
+    font-variant-numeric: tabular-nums;
+  }
+
+  // Aisle sections
+  &__sections {
+    columns: 2;
+    column-gap: $spacing-xl;
+  }
+
+  &__section {
+    break-inside: avoid;
+    margin-bottom: $spacing-lg;
+  }
+
+  &__section-title {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: $muted;
+    margin-bottom: $spacing-xs;
+  }
+
+  &__section-count {
+    background: $surface;
+    border-radius: $radius-full;
+    padding: 0 6px;
+    font-size: 10px;
+    letter-spacing: 0;
+  }
+
+  &__items { list-style: none; }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: 7px $spacing-sm;
+    margin: 0 (-$spacing-sm);
+    border-radius: $radius-sm;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background $transition;
+
+    &:hover { background: $surface; }
+
+    &--checked {
+      .shopping-list__name,
+      .shopping-list__qty { text-decoration: line-through; color: $muted; opacity: 0.6; }
+    }
+  }
+
+  // Custom checkbox matching the theme (native one is white in dark mode)
+  &__checkbox {
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    display: grid;
+    place-content: center;
+    border: 1.5px solid $border;
+    border-radius: 5px;
+    background: $bg;
+    cursor: pointer;
+    transition: background $transition, border-color $transition;
+
+    &::after {
+      content: '✓';
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1;
+      color: #0f0e0d;
+      transform: scale(0);
+      transition: transform $transition;
+    }
+
+    &:hover { border-color: $amber-dim; }
+
+    &:checked {
+      background: $amber;
+      border-color: $amber;
+
+      &::after { transform: scale(1); }
+    }
+
+    &:focus-visible { outline: 2px solid $amber-dim; outline-offset: 2px; }
+  }
+
+  &__name {
+    flex: 1;
+    min-width: 0;
+    color: $text;
+
+    &::first-letter { text-transform: uppercase; }
+  }
+
+  &__qty {
+    color: $amber;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
 }
 
 // ── Modal sélection recette ────────────────────────────────────────────────────
@@ -478,4 +651,6 @@
   }
 
   .menu-detail__name { font-size: 24px; }
+
+  .shopping-list__sections { columns: 1; }
 }

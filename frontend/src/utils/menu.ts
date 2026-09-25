@@ -92,6 +92,11 @@ export function isWithinTolerance(value: number, target: number, tolerance = GOA
   return Math.abs(value - target) / target <= tolerance
 }
 
+/** Lowercases and strips accents (and the œ ligature), for accent-insensitive comparisons. */
+export function normalizeText(s: string): string {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/œ/g, 'oe').toLowerCase()
+}
+
 /**
  * Filters recipes by a case- and accent-insensitive title search and an optional category.
  *
@@ -100,11 +105,10 @@ export function isWithinTolerance(value: number, target: number, tolerance = GOA
  * @param category - Category key, or null for all categories
  */
 export function searchRecipes(recipes: RecipeListItem[], query: string, category: string | null): RecipeListItem[] {
-  const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
-  const q = normalize(query.trim())
+  const q = normalizeText(query.trim())
   return recipes.filter(r =>
     (category === null || r.category === category) &&
-    (q === '' || normalize(r.title).includes(q))
+    (q === '' || normalizeText(r.title).includes(q))
   )
 }
 

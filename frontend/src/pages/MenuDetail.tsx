@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import MenuRecipeRow from '../components/MenuRecipeRow'
 import NutritionSummary from '../components/NutritionSummary'
 import RecipePickerModal from '../components/RecipePickerModal'
+import ShoppingList from '../components/ShoppingList'
 import { useAuth } from '../context/AuthContext'
 import {
   addMenuItem,
@@ -10,11 +11,12 @@ import {
   deleteMenuItem,
   getMenu,
   getRecipes,
+  getShoppingList,
   updateMenu,
   updateMenuItem,
 } from '../services/api'
 import { loadGoals } from '../services/goals'
-import type { Menu, MenuItem } from '../types/menu'
+import type { Menu, MenuItem, ShoppingListItem } from '../types/menu'
 import { DEFAULT_GOALS, type NutritionalGoals } from '../types/profil'
 import type { RecipeListItem } from '../types/recipe'
 import { averagePerMeal, groupByCategory, perMealTargets, totalMeals } from '../utils/menu'
@@ -32,6 +34,12 @@ type PickerState =
 
 type Toast = { msg: string; type: 'success' | 'error' }
 
+/** Shopping list panel: closed, or open (items kept while reloading after a menu change). */
+type ShoppingState =
+  | { status: 'closed' }
+  | { status: 'loading'; items: ShoppingListItem[] }
+  | { status: 'ready'; items: ShoppingListItem[] }
+
 /** A menu as a list of recipes grouped by category, with edit actions and a nutritional recap. */
 export default function MenuDetail() {
   const { id } = useParams<{ id: string }>()
@@ -47,6 +55,8 @@ export default function MenuDetail() {
   const [busy, setBusy] = useState(false)
   const [showSummary, setShowSummary] = useState(false)
   const [toast, setToast] = useState<Toast | null>(null)
+  const [shopping, setShopping] = useState<ShoppingState>({ status: 'closed' })
+  const shoppingRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
     getMenu(menuId)
@@ -88,6 +98,27 @@ export default function MenuDetail() {
   const meals = totalMeals(menu.items)
   const trimmedName = nameDraft.trim()
 
+  /** Opens (or refreshes) the shopping list from the menu's current portions. */
+  function loadShoppingList() {
+    setShopping(s => ({ status: 'loading', items: s.status === 'closed' ? [] : s.items }))
+    getShoppingList(menu.id)
+      .then(items => setShopping({ status: 'ready', items }))
+      .catch((e: Error) => {
+        setShopping({ status: 'closed' })
+        showToast(e.message, 'error')
+      })
+  }
+
+  /** Opens the list (below the recipes, so scrolls to it) or closes it. */
+  function toggleShoppingList() {
+    if (shopping.status !== 'closed') {
+      setShopping({ status: 'closed' })
+      return
+    }
+    loadShoppingList()
+    requestAnimationFrame(() => shoppingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }
+
   /** Runs a menu mutation, applies the returned menu and reports errors. */
   async function mutate(action: () => Promise<Menu | void>, successMsg?: string) {
     setBusy(true)
@@ -95,6 +126,8 @@ export default function MenuDetail() {
       const updated = await action()
       if (updated) setState({ status: 'ready', menu: updated })
       if (successMsg) showToast(successMsg, 'success')
+      // Portions or recipes may have changed: keep the open shopping list in sync
+      if (shopping.status !== 'closed') loadShoppingList()
       return true
     } catch (e) {
       showToast((e as Error).message, 'error')
@@ -173,6 +206,14 @@ export default function MenuDetail() {
           📊 Récapitulatif nutritionnel
         </button>
         <button
+          className={`btn-ghost menu-detail__toggle ${shopping.status !== 'closed' ? 'menu-detail__toggle--active' : ''}`}
+          onClick={toggleShoppingList}
+          aria-expanded={shopping.status !== 'closed'}
+          disabled={menu.items.length === 0}
+        >
+          🛒 Liste de courses
+        </button>
+        <button
           className="btn-ghost"
           onClick={handleRename}
           disabled={busy || !trimmedName || trimmedName === menu.name}
@@ -188,31 +229,44 @@ export default function MenuDetail() {
         <NutritionSummary average={averagePerMeal(menu.items)} targets={perMealTargets(goals)} />
       )}
 
-      {menu.items.length === 0 ? (
-        <div className="empty">
-          <div className="empty__icon">🍽️</div>
-          <div className="empty__title">Ce menu est vide</div>
-          <div className="empty__sub">Ajoute une recette pour commencer.</div>
+      <div className="menu-detail__body">
+        <div className="menu-detail__main">
+          {menu.items.length === 0 ? (
+            <div className="empty">
+              <div className="empty__icon">🍽️</div>
+              <div className="empty__title">Ce menu est vide</div>
+              <div className="empty__sub">Ajoute une recette pour commencer.</div>
+            </div>
+          ) : (
+            groupByCategory(menu.items).map(group => (
+              <section key={group.key} className="menu-detail__group">
+                <h2 className="menu-detail__group-title">{group.label}</h2>
+                <ul className="menu-detail__recipes">
+                  {group.items.map(item => (
+                    <MenuRecipeRow
+                      key={item.id}
+                      item={item}
+                      disabled={busy}
+                      onReplace={i => setPicker({ mode: 'replace', item: i })}
+                      onDelete={handleDeleteItem}
+                      onPortionsChange={handlePortionsChange}
+                    />
+                  ))}
+                </ul>
+              </section>
+            ))
+          )}
         </div>
-      ) : (
-        groupByCategory(menu.items).map(group => (
-          <section key={group.key} className="menu-detail__group">
-            <h2 className="menu-detail__group-title">{group.label}</h2>
-            <ul className="menu-detail__recipes">
-              {group.items.map(item => (
-                <MenuRecipeRow
-                  key={item.id}
-                  item={item}
-                  disabled={busy}
-                  onReplace={i => setPicker({ mode: 'replace', item: i })}
-                  onDelete={handleDeleteItem}
-                  onPortionsChange={handlePortionsChange}
-                />
-              ))}
-            </ul>
-          </section>
-        ))
-      )}
+
+        {shopping.status !== 'closed' && (
+          <ShoppingList
+            ref={shoppingRef}
+            items={shopping.items}
+            loading={shopping.status === 'loading' && shopping.items.length === 0}
+            onClose={() => setShopping({ status: 'closed' })}
+          />
+        )}
+      </div>
 
       {picker && (
         <RecipePickerModal

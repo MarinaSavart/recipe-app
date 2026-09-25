@@ -1,5 +1,5 @@
 import type { Recipe, RecipeListItem, UpdateRecipePayload } from "../types/recipe"
-import type { Menu, MenuGenerateParams, MenuItem, MenuListItem } from "../types/menu"
+import type { Menu, MenuGenerateParams, MenuItem, MenuListItem, ShoppingListItem } from "../types/menu"
 import { DEFAULT_GOALS, type SyncedNutritionalGoals } from "../types/profil"
 
 // The backend returns is_liked / likes_count in snake_case (like the rest of the JSON);
@@ -300,6 +300,11 @@ export async function updateMenuItem(menuId: number, itemId: number, recipeId: n
     body: JSON.stringify({ recipe_id: recipeId, portions }),
   })
   return mapMenu(raw)
+}
+
+/** Fetches a menu's shopping list: ingredients scaled to the portions used in the menu. */
+export async function getShoppingList(menuId: number): Promise<ShoppingListItem[]> {
+  return request<ShoppingListItem[]>(`/menus/${menuId}/shopping-list`)
 }
 
 /** Removes a recipe from a menu. */
