@@ -13,8 +13,10 @@ from app.schemas.menu import (
     MenuListItem,
     MenuOut,
     MenuUpdate,
+    ShoppingListItem,
 )
 from app.services import menu as menu_service
+from app.services import shopping_list as shopping_list_service
 from app.services import user_goals as goals_service
 from app.services.menu_generator import generate_menu
 
@@ -76,6 +78,21 @@ async def get_menu(
     """A full menu with its items and recipes (owner only)."""
     menu = await menu_service.get_owned_or_404(menu_id, current_user, db)
     return await menu_service.get_full(menu.id, current_user, db)
+
+
+@router.get("/{menu_id}/shopping-list", response_model=list[ShoppingListItem])
+async def get_shopping_list(
+    menu_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Shopping list of a menu (owner only): ingredients scaled to the portions
+    used in the menu, merged by name and unit, sorted alphabetically.
+    """
+    menu = await menu_service.get_owned_or_404(menu_id, current_user, db)
+    items = await menu_service.get_items_with_ingredients(menu.id, db)
+    return shopping_list_service.build_shopping_list(items)
 
 
 @router.patch("/{menu_id}", response_model=MenuOut)

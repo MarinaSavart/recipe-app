@@ -65,6 +65,17 @@ async def get_full(menu_id: int, user: User, db: AsyncSession) -> Menu:
     return menu
 
 
+async def get_items_with_ingredients(menu_id: int, db: AsyncSession) -> list[MenuItem]:
+    """The menu's items with their recipes and ingredients loaded (for the shopping list)."""
+    result = await db.execute(
+        select(MenuItem)
+        .options(selectinload(MenuItem.recipe).selectinload(Recipe.ingredients))
+        .where(MenuItem.menu_id == menu_id)
+        .order_by(MenuItem.position)
+    )
+    return list(result.scalars().all())
+
+
 async def get_generation_recipes(db: AsyncSession) -> list[dict]:
     """
     "Repas" recipes offered to the generator, in the compact shape sent to Ollama.
