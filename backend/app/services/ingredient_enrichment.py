@@ -40,6 +40,8 @@ STOPWORDS = {"de", "du", "des", "d", "la", "le", "les", "l", "et", "au", "aux", 
 # unless rehydrated ("Bouillon de volaille, déshydraté reconstitué" is the liquid)
 DRY_FORM_WORDS = {"deshydrate", "deshydratee", "poudre", "lyophilise", "lyophilisee", "concentre"}
 REHYDRATED_WORDS = {"reconstitue", "reconstituee"}
+# Prepared forms: only relevant when the ingredient itself says so ("escalope" ≠ "Escalope panée")
+PREPARED_WORDS = {"pane", "panee", "frit", "frite", "farci", "farcie", "beignet", "gratine", "gratinee"}
 # State words: not part of what the food is ("Oeuf cru" is an egg), singularized like _tokens()
 STATE_WORDS = {"cru", "crue", "cuit", "cuite", "frai", "fraiche", "seche", "surgele", "surgelee"}
 MACRO_FIELDS = ("calories", "proteins_g", "carbs_g", "fats_g")
@@ -52,6 +54,7 @@ SEARCH_SYNONYMS: dict[str, list[str]] = {
         "coquillette", "farfalle", "linguine", "conchiglie",
     )},
     "farine": ["farine", "ble"],                # plain "farine" = wheat flour
+    "escalope": ["escalope", "filet"],          # "Poulet, filet sans peau cru" is the chicken escalope
     "cottage": ["fromage", "frai", "nature"],  # "frais" once singularized
     "moret": ["fromage", "frai", "nature"],    # Saint Moret (brand)
 }
@@ -134,6 +137,7 @@ def find_candidates(
             - 0.02 * len(food.tokens - food.main_tokens)
             + (0.5 if starts_alike else 0)
             + (0.1 if food.is_raw else 0)
+            - (0.8 if food.tokens & PREPARED_WORDS and not query & PREPARED_WORDS else 0)
         )
         scored.append((score, food))
 
@@ -275,6 +279,16 @@ def store_aisle(food: _IndexedFood) -> str:
     return food.aisle
 
 
+def _query_tokens(name: str) -> set[str]:
+    """The ingredient's search words, synonyms included ("rigatoni" → {"pate", "seche"})."""
+    return {synonym for token in _tokens(name) for synonym in SEARCH_SYNONYMS.get(token, [token])}
+
+
+def _names_same_food(name: str, food: _IndexedFood) -> bool:
+    """Whether the food's main term (before the comma) shares a word with the ingredient."""
+    return bool(_query_tokens(name) & (food.main_tokens | {food.first_token}))
+
+
 def _is_dry_form(food: _IndexedFood) -> bool:
     return bool(food.tokens & DRY_FORM_WORDS) and not food.tokens & REHYDRATED_WORDS
 
@@ -319,6 +333,43 @@ async def _normalize(ingredients: list[Ingredient]) -> None:
         ingredient.weight_g = _standard_weight(ingredient) or _counted_weight(ingredient, item.get("poids_unitaire_g"))
 
 
+def _unit_of(ingredient: Ingredient) -> str | None:
+    """The ingredient's unit, from its unit field or written in its quantity ("1 sachet")."""
+    parsed = parse_quantity(ingredient.quantity) if ingredient.quantity else None
+    return ingredient.unit or (parsed[1] if parsed else None)
+
+
+def _weights_prompt(ingredients: list[Ingredient]) -> str:
+    listing = [
+        {"i": index, "ingredient": ing.canonical_name or ing.name.strip(), "unite": _unit_of(ing)}
+        for index, ing in enumerate(ingredients)
+    ]
+    return f"""
+Donne le poids en grammes d'UNE SEULE unité de chaque ingrédient, dans l'unité indiquée
+(ou d'une pièce si l'unité est null). Estime toujours, même approximativement : ne réponds jamais null.
+Exemples : 1 oignon ≈ 110, 1 feuille de riz ≈ 8, 1 tranche de pain ≈ 30, 1 feuille de basilic ≈ 0.5.
+
+{json.dumps(listing, ensure_ascii=False)}
+
+RÉPONDS UNIQUEMENT avec un objet JSON valide :
+{{"items": [{{"i": 0, "poids_unitaire_g": 110}}]}}
+""".strip()
+
+
+async def _fill_missing_weights(ingredients: list[Ingredient]) -> None:
+    """
+    Second, focused call for ingredients with a numeric quantity but no weight yet:
+    Mistral answers null more often inside the bigger normalization prompt.
+    """
+    missing = [i for i in ingredients if i.weight_g is None and i.quantity and parse_quantity(i.quantity)]
+    if not missing:
+        return
+    for item in await _ask_ollama(_weights_prompt(missing)):
+        position = item.get("i")
+        if isinstance(position, int) and 0 <= position < len(missing):
+            missing[position].weight_g = _counted_weight(missing[position], item.get("poids_unitaire_g"))
+
+
 async def _match_ciqual(ingredients: list[Ingredient], index: dict[int, _IndexedFood]) -> None:
     """Step 2: link to a Ciqual food chosen among pre-selected candidates."""
     requests = []
@@ -355,6 +406,9 @@ async def _match_ciqual(ingredients: list[Ingredient], index: dict[int, _Indexed
         if code is not None and _is_liquid(ingredient) and _is_dry_form(index[code]):
             # Safety net: a volume of liquid never matches a dry form (its kcal/100 g are ~10× higher)
             code = next((c.code for c in candidates if not _is_dry_form(c)), None)
+        if code is not None and not _names_same_food(name, index[code]):
+            # Safety net: the food's main term must be the ingredient ("piment" ≠ "Anchois, … au piment")
+            code = None
         if code is None:
             continue
         ingredient.ciqual_code = code
@@ -397,7 +451,8 @@ async def enrich_recipe(recipe: Recipe, db: AsyncSession, update_macros: bool = 
     """
     Enriches the recipe's not-yet-enriched ingredients (canonical_name is null), keeping
     the Ciqual links already set (chosen by the user), aligns every linked ingredient's
-    aisle on its Ciqual food, and with `update_macros`, replaces the recipe's macros by the Ciqual computation
+    aisle on its Ciqual food, fills the recipe's macros from Ciqual when it has none, and
+    with `update_macros`, replaces existing macros by the Ciqual computation
     when it's complete. `recipe.ingredients` must be loaded. Never raises on LLM errors.
     """
     pending = [i for i in recipe.ingredients if i.canonical_name is None and not is_section_marker(i)]
@@ -406,6 +461,7 @@ async def enrich_recipe(recipe: Recipe, db: AsyncSession, update_macros: bool = 
     if pending:
         try:
             await _normalize(pending)
+            await _fill_missing_weights(pending)
             if index:
                 # Links chosen by the user in the edit form are never re-guessed
                 await _match_ciqual([i for i in pending if i.canonical_name and i.ciqual_code is None], index)
@@ -418,7 +474,9 @@ async def enrich_recipe(recipe: Recipe, db: AsyncSession, update_macros: bool = 
         if food and (aisle := store_aisle(food)) != "other":
             ingredient.aisle = aisle
 
-    macros = compute_macros(recipe, index) if update_macros and index else None
+    # Filling empty macros overwrites nothing: done even without `update_macros`
+    has_no_macros = all(getattr(recipe, field) is None for field in MACRO_FIELDS)
+    macros = compute_macros(recipe, index) if (update_macros or has_no_macros) and index else None
     if macros:
         for field, value in macros.items():
             setattr(recipe, field, value)

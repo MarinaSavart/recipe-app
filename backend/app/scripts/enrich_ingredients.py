@@ -8,8 +8,9 @@ Ciqual link). Run `python -m app.scripts.import_ciqual` first.
     python -m app.scripts.enrich_ingredients --rematch        # also redo the Ciqual links, even hand-picked ones
     python -m app.scripts.enrich_ingredients --update-macros  # also replace macros by the Ciqual computation
 
-Macros are left untouched unless --update-macros is given, since they may have been
-edited by hand; the before/after values are printed either way.
+Empty macros are filled from Ciqual when the computation is complete. Existing macros
+are left untouched unless --update-macros is given, since they may have been edited by
+hand; the before/after values are printed either way.
 """
 import argparse
 import asyncio
@@ -44,6 +45,7 @@ async def run(recipe_id: int | None, force: bool, rematch: bool, update_macros: 
                     enrichment_service.reset_enrichment(ingredient, keep_link=not rematch)
 
             before = {field: getattr(recipe, field) for field in enrichment_service.MACRO_FIELDS}
+            was_empty = all(value is None for value in before.values())
             await enrichment_service.enrich_recipe(recipe, db, update_macros=update_macros)
             computed = enrichment_service.compute_macros(recipe, await enrichment_service.get_ciqual_index(db))
             await db.commit()
@@ -51,7 +53,11 @@ async def run(recipe_id: int | None, force: bool, rematch: bool, update_macros: 
             matched = sum(1 for i in recipe.ingredients if i.ciqual_code)
             logger.info("#%s %s — %d/%d ingrédients liés à Ciqual", recipe.id, recipe.title, matched, len(recipe.ingredients))
             if computed:
-                status = "remplacées" if update_macros else "non appliquées (--update-macros)"
+                status = (
+                    "remplies (recette sans macros)" if was_empty
+                    else "remplacées" if update_macros
+                    else "non appliquées (--update-macros)"
+                )
                 logger.info("    macros actuelles %s → Ciqual %s [%s]", before, computed, status)
             else:
                 logger.info("    macros Ciqual incomplètes : macros actuelles conservées")

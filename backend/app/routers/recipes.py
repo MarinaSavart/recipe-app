@@ -254,10 +254,15 @@ async def update_recipe(
 
     recipe = await recipe_service.get_or_404(recipe_id, db)
     recipe_service.ensure_owner(recipe, current_user)
+    # New ingredients make the macros stale: recompute them, unless the user edited them too
+    recompute_macros = (
+        recipe_service.ingredients_changed(recipe, payload)
+        and not recipe_service.macros_changed(recipe, payload)
+    )
     recipe = await recipe_service.apply_update(recipe, payload, db)
     updated_recipe = await recipe_service.get_or_404(recipe.id, db)
-    # Only new or changed ingredients are enriched; macros stay as the user set them
-    await enrichment_service.enrich_recipe(updated_recipe, db)
+    # Only new or changed ingredients are enriched
+    await enrichment_service.enrich_recipe(updated_recipe, db, update_macros=recompute_macros)
     await recipe_service.attach_like_metadata(updated_recipe, db, current_user)
     return updated_recipe
 

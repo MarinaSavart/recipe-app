@@ -7,7 +7,7 @@ from app.models.ciqual import CiqualFood
 from app.models.recipe import Ingredient, Recipe, RecipeLike, Step, Tag
 from app.models.user import User
 from app.schemas.recipe import RecipeCreate, RecipeUpdate
-from app.services.ingredient_enrichment import copy_enrichment
+from app.services.ingredient_enrichment import MACRO_FIELDS, copy_enrichment
 
 
 async def get_or_404(recipe_id: int, db: AsyncSession) -> Recipe:
@@ -176,6 +176,37 @@ async def save_recipe(
 
     await db.flush()
     return recipe
+
+
+def ingredients_changed(recipe: Recipe, payload: RecipeUpdate) -> bool:
+    """
+    Whether the update changes what the macros depend on: an ingredient added, removed,
+    or with another quantity, unit or Ciqual link (notes and order don't count).
+    """
+    if "ingredients" not in payload.model_fields_set:
+        return False
+    current_codes = {ing.name: ing.ciqual_code for ing in recipe.ingredients}
+    before = sorted(
+        (ing.name, ing.quantity or "", ing.unit or "", ing.ciqual_code or 0) for ing in recipe.ingredients
+    )
+    after = sorted(
+        (
+            ing.name, ing.quantity or "", ing.unit or "",
+            (ing.ciqual_code if "ciqual_code" in ing.model_fields_set else current_codes.get(ing.name)) or 0,
+        )
+        for ing in payload.ingredients
+    )
+    return before != after
+
+
+def macros_changed(recipe: Recipe, payload: RecipeUpdate) -> bool:
+    """Whether the update sets at least one macro to another value than the current one."""
+    sent = payload.model_dump(include=set(MACRO_FIELDS), exclude_unset=True)
+    for field, value in sent.items():
+        current = getattr(recipe, field)
+        if (value is None) != (current is None) or (value is not None and abs(value - current) > 0.05):
+            return True
+    return False
 
 
 async def apply_update(recipe: Recipe, payload: RecipeUpdate, db: AsyncSession) -> Recipe:
