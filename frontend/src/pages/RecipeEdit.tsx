@@ -1,15 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getRecipe, updateRecipe, uploadPhoto } from '../services/api'
-import type { Recipe, Ingredient, Step } from '../types/recipe'
+import IngredientNameInput from '../components/IngredientNameInput'
+import { getRecipe, searchCiqual, updateRecipe, uploadPhoto } from '../services/api'
+import type { CiqualFood, Recipe, Ingredient, Step } from '../types/recipe'
 import { CATEGORIES, type CategoryKey } from '../utils/categories'
 import { resolveMediaUrl } from '../utils/recipeDisplay'
 
 interface EditIngredient extends Omit<Ingredient, 'id'> { id?: number }
 interface EditStep extends Omit<Step, 'id'> { id?: number }
 
-type EditIngredientTextField = Exclude<keyof EditIngredient, 'id' | 'position'>
+type EditIngredientTextField = Exclude<keyof EditIngredient, 'id' | 'position' | 'ciqual_food'>
 type EditStepTextField = Exclude<keyof EditStep, 'id' | 'position'>
 
 /** Recipe edit form: general info, macros, photo, ingredients, and steps. */
@@ -95,10 +96,24 @@ export default function RecipeEdit() {
     ))
   }
 
+  /** Renames an ingredient: its Ciqual link belonged to the previous name, so it's dropped. */
+  function renameIngredient(index: number, name: string) {
+    setIngredients(prev => prev.map((ing, i) =>
+      i === index ? { ...ing, name, ciqual_food: null } : ing
+    ))
+  }
+
+  /** Links an ingredient to a Ciqual food picked in the suggestions (or unlinks it). */
+  function linkIngredient(index: number, food: CiqualFood | null) {
+    setIngredients(prev => prev.map((ing, i) =>
+      i === index ? { ...ing, ciqual_food: food } : ing
+    ))
+  }
+
   /** Appends a new empty ingredient row. */
   function addIngredient() {
     setIngredients(prev => [...prev, {
-      name: '', quantity: null, unit: null, notes: null,
+      name: '', quantity: null, unit: null, notes: null, ciqual_food: null,
       position: prev.length
     }])
   }
@@ -163,7 +178,15 @@ export default function RecipeEdit() {
         tags: tagsInput.split(',').map(t => t.trim()).filter(Boolean),
         ingredients: ingredients
           .filter(ing => ing.name.trim())
-          .map((ing, i) => ({ ...ing, position: i })),
+          .map((ing, i) => ({
+            name: ing.name,
+            quantity: ing.quantity,
+            unit: ing.unit,
+            notes: ing.notes,
+            position: i,
+            // Always sent: the backend treats it as the link to keep (null = none)
+            ciqual_code: ing.ciqual_food?.code ?? null,
+          })),
         steps: steps
           .filter(s => s.content.trim())
           .map((s, i) => ({ ...s, position: i })),
@@ -332,14 +355,21 @@ export default function RecipeEdit() {
         {/* Ingredients */}
         <div className="edit-section">
           <div className="edit-section__title">Ingrédients (quantités pour 1 portion)</div>
+          <p className="edit-section__hint">
+            Tape le nom d'un ingrédient pour voir les aliments Ciqual correspondants : en choisir un
+            fixe son rayon et ses valeurs nutritionnelles. Sans choix, Mistral le devine quand
+            l'ingrédient est ajouté ou modifié.
+          </p>
           {ingredients.map((ing, i) => (
             <div key={i} className="edit-row">
               <div className="edit-row__inputs">
-                <input
-                  className="edit-field__input edit-row__name"
-                  placeholder="Nom"
+                <IngredientNameInput
+                  className="edit-row__name"
                   value={ing.name}
-                  onChange={e => updateIngredient(i, 'name', e.target.value)}
+                  link={ing.ciqual_food}
+                  onChange={name => renameIngredient(i, name)}
+                  onLinkChange={food => linkIngredient(i, food)}
+                  search={searchCiqual}
                 />
                 <input
                   className="edit-field__input edit-row__qty"
