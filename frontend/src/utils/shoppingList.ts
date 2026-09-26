@@ -93,6 +93,11 @@ const MEASURED_UNITS = new Set(['g', 'ml'])
 const PLURAL_UNITS: Record<string, string> = { 'pièce': 'pièces', 'pincée': 'pincées', 'gousse': 'gousses' }
 const SINGULAR_UNITS: Record<string, string> = { tranches: 'tranche', feuilles: 'feuille' }
 
+/** Display label of a store aisle key ("produce" → "🥬 Fruits & légumes"). */
+export function aisleLabel(key: string): string {
+  return AISLES.find(a => a.key === key)?.label ?? OTHER_AISLE.label
+}
+
 /** Whether a normalized name contains the keyword as whole words (singular or plural). */
 function hasKeyword(name: string, keyword: string): boolean {
   const padded = ` ${name.replace(/[^a-z0-9]+/g, ' ')} `

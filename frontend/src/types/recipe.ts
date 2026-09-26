@@ -3,6 +3,13 @@
 // represent the raw JSON exchanged with the API (so they mirror the
 // Pydantic schemas), not internal frontend objects.
 
+/** A food of the ANSES-Ciqual table (linked to an ingredient, or suggested while typing). */
+export interface CiqualFood {
+    code: number;
+    name_fr: string;
+    aisle: string;
+}
+
 /** A single recipe ingredient, as returned by the API. */
 export interface Ingredient {
     id: number;
@@ -11,6 +18,12 @@ export interface Ingredient {
     unit: string | null;
     notes: string | null;
     position: number;
+    ciqual_food: CiqualFood | null;
+}
+
+/** An ingredient as sent when updating a recipe: `ciqual_code` is the (hand-picked or kept) link, null if none. */
+export interface IngredientPayload extends Omit<Ingredient, 'id' | 'ciqual_food'> {
+    ciqual_code: number | null;
 }
 
 /** A single recipe step, as returned by the API. */
@@ -83,7 +96,7 @@ export interface UpdateRecipePayload {
   proteins_g: number | null
   carbs_g: number | null
   fats_g: number | null
-  ingredients: Omit<Ingredient, 'id'>[]
+  ingredients: IngredientPayload[]
   steps: Omit<Step, 'id'>[]
   tags: string[]
 }
