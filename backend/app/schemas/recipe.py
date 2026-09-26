@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel, HttpUrl, field_validator
 
 from app.schemas.ciqual import CiqualFoodOut
 
@@ -64,6 +64,10 @@ class TagOut(BaseModel):
 
 # ── Recipe ─────────────────────────────────────────────────────────────────────
 
+def normalize_title(title: str) -> str:
+    """First letter uppercase, the rest lowercase: "PÂTES carbo" → "Pâtes carbo"."""
+    return title.strip().capitalize()
+
 class RecipeBase(BaseModel):
     title: str
     description: Optional[str] = None
@@ -86,6 +90,11 @@ class RecipeCreate(RecipeBase):
     steps: list[StepCreate] = []
     tags: list[str] = []
     raw_description: Optional[str] = None
+
+    @field_validator("title")
+    @classmethod
+    def _normalize_title(cls, title: str) -> str:
+        return normalize_title(title)
 
 class RecipeOut(RecipeBase):
     # what the API returns — includes relationships and timestamps
@@ -132,3 +141,8 @@ class RecipeUpdate(BaseModel):
     ingredients: Optional[list[IngredientCreate]] = None
     steps: Optional[list[StepCreate]] = None
     tags: Optional[list[str]] = None
+
+    @field_validator("title")
+    @classmethod
+    def _normalize_title(cls, title: str | None) -> str | None:
+        return normalize_title(title) if title is not None else None
