@@ -34,12 +34,6 @@ export interface Step {
     duration_minutes: number | null;
 }
 
-/** A recipe tag, as returned by the API. */
-export interface Tag {
-    id: number;
-    name: string;
-}
-
 /** Full recipe shape — used on the detail page. */
 export interface Recipe {
   id: number
@@ -61,7 +55,6 @@ export interface Recipe {
   likesCount: number
   ingredients: Ingredient[]
   steps: Step[]
-  tags: Tag[]
   created_at: string
   updated_at: string
 }
@@ -98,5 +91,4 @@ export interface UpdateRecipePayload {
   fats_g: number | null
   ingredients: IngredientPayload[]
   steps: Omit<Step, 'id'>[]
-  tags: string[]
 }

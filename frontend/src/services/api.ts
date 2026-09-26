@@ -108,7 +108,7 @@ export async function getRecipes(category?: string): Promise<RecipeListItem[]> {
     return raw.map(mapRecipeListItem)
 }
 
-/** Fetches a single recipe with its full details (ingredients, steps, tags). */
+/** Fetches a single recipe with its full details (ingredients, steps). */
 export async function getRecipe(id: number): Promise<Recipe> {
     const raw = await request<RawRecipe>(`/recipes/${id}/`)
     return mapRecipe(raw)

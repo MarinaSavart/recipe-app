@@ -54,14 +54,6 @@ class StepOut(StepBase):
     model_config = {"from_attributes": True}
 
 
-# ── Tag ────────────────────────────────────────────────────────────────────────
-
-class TagOut(BaseModel):
-    id: int
-    name: str
-    model_config = {"from_attributes": True}
-
-
 # ── Recipe ─────────────────────────────────────────────────────────────────────
 
 def normalize_title(title: str) -> str:
@@ -88,7 +80,6 @@ class RecipeCreate(RecipeBase):
     # used internally to create a recipe (after Claude parsing)
     ingredients: list[IngredientCreate] = []
     steps: list[StepCreate] = []
-    tags: list[str] = []
     raw_description: Optional[str] = None
 
     @field_validator("title")
@@ -101,7 +92,6 @@ class RecipeOut(RecipeBase):
     id: int
     ingredients: list[IngredientOut] = []
     steps: list[StepOut] = []
-    tags: list[TagOut] = []
     is_liked: bool
     likes_count: int
     created_at: datetime
@@ -140,7 +130,6 @@ class RecipeUpdate(BaseModel):
     fats_g: Optional[float] = None
     ingredients: Optional[list[IngredientCreate]] = None
     steps: Optional[list[StepCreate]] = None
-    tags: Optional[list[str]] = None
 
     @field_validator("title")
     @classmethod

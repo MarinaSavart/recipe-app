@@ -57,7 +57,7 @@ src/
 │   └── main.scss
 ├── types/
 │   ├── profil.ts            # PersonalMetrics, NutritionalGoals, GOALS, WORK_ACTIVITIES
-│   └── recipe.ts            # Recipe, RecipeListItem, Ingredient, Step, Tag
+│   └── recipe.ts            # Recipe, RecipeListItem, Ingredient, Step
 └── utils/
     └── nutritionCalc.ts     # calculateTDEE, calculateMacros, getActivityMultiplier
 ```

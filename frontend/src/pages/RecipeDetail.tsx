@@ -79,7 +79,7 @@ export default function RecipeDetail() {
   if (!recipe) return null
 
   const totalTime = (recipe.prep_time_minutes ?? 0) + (recipe.cook_time_minutes ?? 0)
-
+  
   return (
     <div className="detail">
 
@@ -229,18 +229,6 @@ export default function RecipeDetail() {
               </div>
             </div>
           ))}
-        </div>
-      )}
-
-      {/* Tags */}
-      {recipe.tags.length > 0 && (
-        <div className="detail__section">
-          <div className="detail__section-title">Tags</div>
-          <div className="tags-row">
-            {recipe.tags.map((tag) => (
-              <span key={tag.id} className="tag">{tag.name}</span>
-            ))}
-          </div>
         </div>
       )}
 

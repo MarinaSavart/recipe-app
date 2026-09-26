@@ -210,7 +210,7 @@ async def get_recipe(
     db: AsyncSession = Depends(get_db),
     current_user: User | None = Depends(get_optional_user),
 ):
-    """Returns a full recipe with ingredients, steps and tags (visible to any user, logged in or not)."""
+    """Returns a full recipe with ingredients and steps (visible to any user, logged in or not)."""
     recipe = await recipe_service.get_or_404(recipe_id, db)
     await recipe_service.attach_like_metadata(recipe, db, current_user)
     return recipe
@@ -247,7 +247,7 @@ async def update_recipe(
 ):
     """
     Updates a recipe (owner only). Only the fields sent are modified (PATCH).
-    For ingredients/steps/tags: fully replaced if provided.
+    For ingredients/steps: fully replaced if provided.
     """
     if payload.category is not None and payload.category not in ALLOWED_CATEGORIES:
         raise HTTPException(status_code=422, detail="Catégorie invalide")
@@ -275,7 +275,7 @@ async def delete_recipe(
 ):
     """
     Deletes a recipe (owner only) and everything linked to it
-    (ingredients/steps/tags are automatically deleted via cascade).
+    (ingredients/steps are automatically deleted via cascade).
     """
     recipe = await recipe_service.get_or_404(recipe_id, db)
     recipe_service.ensure_owner(recipe, current_user)

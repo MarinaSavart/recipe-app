@@ -45,9 +45,6 @@ class Recipe(Base):
     steps: Mapped[list["Step"]] = relationship(
         "Step", back_populates="recipe", cascade="all, delete-orphan", order_by="Step.position"
     )
-    tags: Mapped[list["Tag"]] = relationship(
-        "Tag", back_populates="recipe", cascade="all, delete-orphan"
-    )
     likes: Mapped[list["RecipeLike"]] = relationship(
         "RecipeLike", back_populates="recipe", cascade="all, delete-orphan"
     )
@@ -88,16 +85,6 @@ class Step(Base):
     duration_minutes: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
     recipe: Mapped["Recipe"] = relationship("Recipe", back_populates="steps")
-
-
-class Tag(Base):
-    __tablename__ = "tags"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    recipe_id: Mapped[int] = mapped_column(ForeignKey("recipes.id"), nullable=False)
-    name: Mapped[str] = mapped_column(String(100), nullable=False)
-
-    recipe: Mapped["Recipe"] = relationship("Recipe", back_populates="tags")
 
 
 class RecipeLike(Base):

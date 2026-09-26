@@ -34,7 +34,6 @@ export default function RecipeEdit() {
   const [proteins, setProteins] = useState('')
   const [carbs, setCarbs] = useState('')
   const [fats, setFats] = useState('')
-  const [tagsInput, setTagsInput] = useState('')
 
   // Lists
   const [ingredients, setIngredients] = useState<EditIngredient[]>([])
@@ -66,7 +65,6 @@ export default function RecipeEdit() {
         setProteins(data.proteins_g?.toString() ?? '')
         setCarbs(data.carbs_g?.toString() ?? '')
         setFats(data.fats_g?.toString() ?? '')
-        setTagsInput(data.tags.map(t => t.name).join(', '))
         setIngredients(data.ingredients)
         setSteps(data.steps)
         if (data.thumbnail_url) {
@@ -175,7 +173,6 @@ export default function RecipeEdit() {
         proteins_g: proteins ? parseFloat(proteins) : null,
         carbs_g: carbs ? parseFloat(carbs) : null,
         fats_g: fats ? parseFloat(fats) : null,
-        tags: tagsInput.split(',').map(t => t.trim()).filter(Boolean),
         ingredients: ingredients
           .filter(ing => ing.name.trim())
           .map((ing, i) => ({
@@ -309,11 +306,6 @@ export default function RecipeEdit() {
             <div className="edit-field">
               <label className="edit-field__label">Portions</label>
               <input className="edit-field__input" type="number" value={servings} onChange={e => setServings(e.target.value)} placeholder="4" />
-            </div>
-
-            <div className="edit-field">
-              <label className="edit-field__label">Tags (séparés par des virgules)</label>
-              <input className="edit-field__input" value={tagsInput} onChange={e => setTagsInput(e.target.value)} placeholder="meal prep, protéiné…" />
             </div>
 
             <div className="edit-field">

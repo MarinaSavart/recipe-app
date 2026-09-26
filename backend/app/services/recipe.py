@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.ciqual import CiqualFood
-from app.models.recipe import Ingredient, Recipe, RecipeLike, Step, Tag
+from app.models.recipe import Ingredient, Recipe, RecipeLike, Step
 from app.models.user import User
 from app.schemas.recipe import RecipeCreate, RecipeUpdate
 from app.services.ingredient_enrichment import MACRO_FIELDS, copy_enrichment
@@ -20,11 +20,10 @@ async def get_or_404(recipe_id: int, db: AsyncSession) -> Recipe:
         .options(
             selectinload(Recipe.ingredients).selectinload(Ingredient.ciqual_food),
             selectinload(Recipe.steps),
-            selectinload(Recipe.tags),
         )
         .where(Recipe.id == recipe_id)
         # Reload collections already in the session: after apply_update() they still
-        # hold the deleted ingredients/steps/tags otherwise
+        # hold the deleted ingredients/steps otherwise
         .execution_options(populate_existing=True)
     )
     recipe = result.scalar_one_or_none()
@@ -138,7 +137,7 @@ async def save_recipe(
     thumbnail_url: str | None = None,
 ) -> Recipe:
     """
-    Saves a RecipeCreate to the database — recipe + ingredients + steps + tags.
+    Saves a RecipeCreate to the database — recipe + ingredients + steps.
     """
     # 1. Create the main recipe
     recipe = Recipe(
@@ -169,10 +168,6 @@ async def save_recipe(
     # 3. Add the steps
     for step in recipe_data.steps:
         db.add(Step(recipe_id=recipe.id, **step.model_dump()))
-
-    # 4. Add the tags
-    for name in recipe_data.tags:
-        db.add(Tag(recipe_id=recipe.id, name=name))
 
     await db.flush()
     return recipe
@@ -212,7 +207,7 @@ def macros_changed(recipe: Recipe, payload: RecipeUpdate) -> bool:
 async def apply_update(recipe: Recipe, payload: RecipeUpdate, db: AsyncSession) -> Recipe:
     """
     Applies a RecipeUpdate to an existing recipe. Only the fields sent
-    are modified (PATCH). For ingredients/steps/tags: fully replaced
+    are modified (PATCH). For ingredients/steps: fully replaced
     if provided.
     """
     update_data = payload.model_dump(exclude_unset=True)
@@ -251,13 +246,6 @@ async def apply_update(recipe: Recipe, payload: RecipeUpdate, db: AsyncSession) 
             await db.delete(step)
         for step in payload.steps:
             db.add(Step(recipe_id=recipe.id, **step.model_dump()))
-
-    # Fully replace the tags if provided
-    if "tags" in update_data:
-        for tag in recipe.tags:
-            await db.delete(tag)
-        for name in payload.tags:
-            db.add(Tag(recipe_id=recipe.id, name=name))
 
     await db.flush()
     return recipe
