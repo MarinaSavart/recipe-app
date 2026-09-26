@@ -5,6 +5,7 @@ import { normalizeText } from './menu'
 export interface ShoppingRow {
   key: string          // normalized name, stable across refreshes (used for ticking)
   name: string
+  aisle: string | null // from the API when the ingredients are enriched
   quantity: string     // e.g. "3 càc + 1", or "" when there's nothing to measure
   recipes: string[]
 }
@@ -16,7 +17,9 @@ export interface ShoppingSection {
   rows: ShoppingRow[]
 }
 
-// Store aisles, in display order. Keywords are normalized (lowercase, no accents)
+// Store aisles, in display order; keys shared with the backend (app/services/aisles.py).
+// The API gives each ingredient's aisle once enriched (Ciqual); the keywords are the
+// fallback for ingredients not enriched yet. They're normalized (lowercase, no accents)
 // and matched as whole words, singular or plural.
 const AISLES = [
   {
@@ -48,6 +51,11 @@ const AISLES = [
     ],
   },
   {
+    key: 'frozen',
+    label: '🧊 Surgelés',
+    keywords: ['surgele', 'glace', 'sorbet'],
+  },
+  {
     key: 'grocery',
     label: '🥫 Épicerie',
     keywords: [
@@ -57,6 +65,11 @@ const AISLES = [
       'bouillon', 'lait de coco', 'soja', 'moutarde', 'ketchup', 'mayonnaise', 'cacao', 'maizena',
       'beurre de cacahuete', 'stevia', 'graine', 'chia',
     ],
+  },
+  {
+    key: 'drinks',
+    label: '🥤 Boissons',
+    keywords: ['eau', 'soda', 'vin', 'biere', 'cafe', 'the', 'limonade'],
   },
   {
     key: 'spices',
@@ -70,7 +83,7 @@ const AISLES = [
 
 // Matching order: most specific first ("ail en poudre" is a spice, "purée de tomates"
 // and "lait de coco" are grocery, "crème vinaigre balsamique" is grocery too)
-const MATCH_ORDER = ['spices', 'grocery', 'meat', 'dairy', 'produce'] as const
+const MATCH_ORDER = ['spices', 'grocery', 'meat', 'dairy', 'produce', 'frozen', 'drinks'] as const
 
 const OTHER_AISLE = { key: 'other', label: '🛒 Autres' }
 const CUPBOARD = { key: 'cupboard', label: 'À vérifier dans tes placards' }
@@ -133,7 +146,8 @@ export function buildShoppingSections(items: ShoppingListItem[]): ShoppingSectio
 
   for (const item of items) {
     const key = normalizeText(item.name)
-    const row = rows.get(key) ?? { key, name: item.name, quantity: '', recipes: [], parts: [] }
+    const row = rows.get(key) ?? { key, name: item.name, aisle: null, quantity: '', recipes: [], parts: [] }
+    row.aisle = row.aisle ?? item.aisle
     const formatted = formatShoppingQuantity(item.quantity, item.unit)
     for (const part of [formatted, ...item.extras]) {
       if (part && !row.parts.includes(part)) row.parts.push(part)
@@ -149,7 +163,9 @@ export function buildShoppingSections(items: ShoppingListItem[]): ShoppingSectio
   )
   for (const { parts, ...row } of rows.values()) {
     const quantity = parts.join(' + ')
-    const sectionKey = quantity ? aisleOf(row.name) : CUPBOARD.key
+    // API aisle when known; "other" (or none) falls back to the name keywords
+    const aisle = row.aisle && row.aisle !== OTHER_AISLE.key && sections.has(row.aisle) ? row.aisle : aisleOf(row.name)
+    const sectionKey = quantity ? aisle : CUPBOARD.key
     sections.get(sectionKey)!.rows.push({ ...row, quantity })
   }
 

@@ -49,6 +49,7 @@ export interface ShoppingListItem {
   name: string
   quantity: number | null  // total for the menu's portions, null if not measurable
   unit: string | null
+  aisle: string | null     // store aisle from the ingredients' enrichment (Ciqual / Mistral), null if not enriched
   extras: string[]         // quantities that couldn't be added up, as written
   recipes: string[]        // titles of the recipes that need this ingredient
 }

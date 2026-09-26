@@ -84,6 +84,11 @@ export default function ShoppingList({ items, loading, onClose, ref }: ShoppingL
               </section>
             ))}
           </div>
+
+          <p className="shopping-list__source">
+            Rayons et valeurs nutritionnelles : table{' '}
+            <a className="shopping-list__source-link" href="https://doi.org/10.57745/RDMHWY" target="_blank" rel="noreferrer">Ciqual</a>, Anses 2025
+          </p>
         </>
       )}
     </aside>

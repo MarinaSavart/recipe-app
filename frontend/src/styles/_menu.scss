@@ -505,6 +505,22 @@
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }
+
+  // Attribution required by the Ciqual licence (Etalab 2.0)
+  &__source {
+    margin-top: $spacing-md;
+    padding-top: $spacing-sm;
+    border-top: 1px solid $border;
+    font-size: 11px;
+    color: $muted;
+  }
+
+  &__source-link {
+    color: $muted;
+    text-decoration: underline;
+
+    &:hover { color: $amber; }
+  }
 }
 
 // ── Modal sélection recette ────────────────────────────────────────────────────
