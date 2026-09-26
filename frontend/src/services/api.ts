@@ -1,4 +1,4 @@
-import type { Recipe, RecipeListItem, UpdateRecipePayload } from "../types/recipe"
+import type { CiqualFood, Recipe, RecipeListItem, UpdateRecipePayload } from "../types/recipe"
 import type { Menu, MenuGenerateParams, MenuItem, MenuListItem, ShoppingListItem } from "../types/menu"
 import { DEFAULT_GOALS, type SyncedNutritionalGoals } from "../types/profil"
 
@@ -172,6 +172,11 @@ export async function updateRecipe(id: number, data: Partial<UpdateRecipePayload
     body: JSON.stringify(data),
   })
   return mapRecipe(raw)
+}
+
+/** Searches the Ciqual foods matching an ingredient name (autocomplete, at least 2 characters). */
+export async function searchCiqual(query: string): Promise<CiqualFood[]> {
+  return request<CiqualFood[]>(`/ciqual/search?q=${encodeURIComponent(query)}`)
 }
 
 /** Uploads a new photo for a recipe (owner only) and returns the updated recipe. */
