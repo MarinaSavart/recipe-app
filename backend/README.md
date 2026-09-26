@@ -94,11 +94,12 @@ python -m app.scripts.import_ciqual
 
 # Enrichit les ingrédients des recettes existantes (nom canonique, rayon, poids, lien Ciqual — Ollama requis)
 python -m app.scripts.enrich_ingredients
-# Options : --recipe-id 16 (une recette), --force (tout refaire),
+# Options : --recipe-id 16 (une recette), --force (refait noms/rayons/poids, garde les liens Ciqual),
+#           --rematch (refait aussi les liens, même ceux choisis à la main),
 #           --update-macros (remplace les macros par le calcul Ciqual quand il est complet)
 ```
 
-Les nouvelles recettes sont enrichies automatiquement à l'import. Leurs macros sont recalculées depuis Ciqual quand chaque ingrédient pesé a été relié à un aliment ; sinon l'estimation de Mistral est conservée.
+Les nouvelles recettes sont enrichies automatiquement à l'import. Dans l'édition d'une recette, le nom de chaque ingrédient propose les aliments Ciqual correspondants (`GET /ciqual/search`) : un aliment choisi à la main n'est jamais remplacé par Mistral. Leurs macros sont recalculées depuis Ciqual quand chaque ingrédient pesé a été relié à un aliment ; sinon l'estimation de Mistral est conservée.
 
 ---
 

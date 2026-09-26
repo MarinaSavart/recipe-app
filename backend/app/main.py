@@ -13,6 +13,7 @@ from app.models import user as user_models  # noqa: F401
 from app.models import menu as menu_models  # noqa: F401
 from app.routers.menus import router as menus_router
 from app.routers.users import router as users_router
+from app.routers.ciqual import router as ciqual_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -50,6 +51,7 @@ app.include_router(recipes_router)
 app.include_router(auth_router)
 app.include_router(menus_router)
 app.include_router(users_router)
+app.include_router(ciqual_router)
 
 # ── Health check ───────────────────────────────────────────────────────────────
 @app.get("/health")

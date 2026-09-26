@@ -3,6 +3,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.models.ciqual import CiqualFood
 from app.models.recipe import Ingredient, Recipe, RecipeLike, Step, Tag
 from app.models.user import User
 from app.schemas.recipe import RecipeCreate, RecipeUpdate
@@ -17,7 +18,7 @@ async def get_or_404(recipe_id: int, db: AsyncSession) -> Recipe:
     result = await db.execute(
         select(Recipe)
         .options(
-            selectinload(Recipe.ingredients),
+            selectinload(Recipe.ingredients).selectinload(Ingredient.ciqual_food),
             selectinload(Recipe.steps),
             selectinload(Recipe.tags),
         )
@@ -193,13 +194,24 @@ async def apply_update(recipe: Recipe, payload: RecipeUpdate, db: AsyncSession) 
 
     # Fully replace the ingredients if provided, keeping the enrichment of unchanged ones
     if "ingredients" in update_data:
+        chosen_codes = {ing.ciqual_code for ing in payload.ingredients if ing.ciqual_code is not None}
+        if chosen_codes:
+            known = set((await db.execute(
+                select(CiqualFood.code).where(CiqualFood.code.in_(chosen_codes))
+            )).scalars())
+            if chosen_codes - known:
+                raise HTTPException(status_code=422, detail="Aliment Ciqual inconnu")
+
         previous = {(ing.name, ing.quantity, ing.unit): ing for ing in recipe.ingredients}
         for ing in recipe.ingredients:
             await db.delete(ing)
         for ing in payload.ingredients:
-            new_ingredient = Ingredient(recipe_id=recipe.id, **ing.model_dump())
+            new_ingredient = Ingredient(recipe_id=recipe.id, **ing.model_dump(exclude={"ciqual_code"}))
             if unchanged := previous.get((ing.name, ing.quantity, ing.unit)):
                 copy_enrichment(unchanged, new_ingredient)
+            if "ciqual_code" in ing.model_fields_set:
+                # The user's choice in the edit form wins over any previous (automatic) link
+                new_ingredient.ciqual_code = ing.ciqual_code
             db.add(new_ingredient)
 
     # Fully replace the steps if provided

@@ -3,6 +3,8 @@ from typing import Optional
 
 from pydantic import BaseModel, HttpUrl
 
+from app.schemas.ciqual import CiqualFoodOut
+
 
 # ── Import ─────────────────────────────────────────────────────────────────────
 
@@ -27,10 +29,13 @@ class IngredientBase(BaseModel):
     position: int = 0
 
 class IngredientCreate(IngredientBase):
-    pass  # identical to Base for now, but kept separate to evolve independently
+    # Ciqual food chosen by the user in the edit form; when sent, it's authoritative
+    # (null = unlinked). When omitted, the existing link is kept.
+    ciqual_code: Optional[int] = None
 
 class IngredientOut(IngredientBase):
     id: int
+    ciqual_food: Optional[CiqualFoodOut] = None  # linked Ciqual food, if any
     model_config = {"from_attributes": True}  # allows reading from a SQLAlchemy object
 
 

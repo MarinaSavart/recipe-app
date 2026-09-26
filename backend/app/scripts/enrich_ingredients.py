@@ -4,7 +4,8 @@ Ciqual link). Run `python -m app.scripts.import_ciqual` first.
 
     python -m app.scripts.enrich_ingredients                  # ingredients not enriched yet
     python -m app.scripts.enrich_ingredients --recipe-id 16   # a single recipe
-    python -m app.scripts.enrich_ingredients --force          # redo every ingredient
+    python -m app.scripts.enrich_ingredients --force          # redo names, aisles and weights (links kept)
+    python -m app.scripts.enrich_ingredients --rematch        # also redo the Ciqual links, even hand-picked ones
     python -m app.scripts.enrich_ingredients --update-macros  # also replace macros by the Ciqual computation
 
 Macros are left untouched unless --update-macros is given, since they may have been
@@ -24,7 +25,7 @@ from app.services import ingredient_enrichment as enrichment_service
 logger = logging.getLogger(__name__)
 
 
-async def run(recipe_id: int | None, force: bool, update_macros: bool) -> None:
+async def run(recipe_id: int | None, force: bool, rematch: bool, update_macros: bool) -> None:
     async with AsyncSessionLocal() as db:
         query = select(Recipe.id).order_by(Recipe.id)
         if recipe_id is not None:
@@ -38,9 +39,9 @@ async def run(recipe_id: int | None, force: bool, update_macros: bool) -> None:
                 select(Recipe).options(selectinload(Recipe.ingredients)).where(Recipe.id == current_id)
             )).scalar_one()
 
-            if force:
+            if force or rematch:
                 for ingredient in recipe.ingredients:
-                    enrichment_service.reset_enrichment(ingredient)
+                    enrichment_service.reset_enrichment(ingredient, keep_link=not rematch)
 
             before = {field: getattr(recipe, field) for field in enrichment_service.MACRO_FIELDS}
             await enrichment_service.enrich_recipe(recipe, db, update_macros=update_macros)
@@ -61,14 +62,15 @@ async def run(recipe_id: int | None, force: bool, update_macros: bool) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Enrich existing recipes' ingredients (Mistral + Ciqual).")
     parser.add_argument("--recipe-id", type=int, help="only this recipe")
-    parser.add_argument("--force", action="store_true", help="re-enrich ingredients already enriched")
+    parser.add_argument("--force", action="store_true", help="re-enrich ingredients already enriched (Ciqual links kept)")
+    parser.add_argument("--rematch", action="store_true", help="like --force, and also redo the Ciqual links (even hand-picked ones)")
     parser.add_argument("--update-macros", action="store_true", help="replace macros by the Ciqual computation when complete")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     engine.echo = False  # the app engine logs every statement
 
-    asyncio.run(run(args.recipe_id, args.force, args.update_macros))
+    asyncio.run(run(args.recipe_id, args.force, args.rematch, args.update_macros))
 
 
 if __name__ == "__main__":

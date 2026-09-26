@@ -100,35 +100,57 @@ async def get_ciqual_index(db: AsyncSession) -> dict[int, _IndexedFood]:
     return _ciqual_index
 
 
-def find_candidates(name: str, index: dict[int, _IndexedFood], limit: int = MAX_CANDIDATES) -> list[_IndexedFood]:
+def find_candidates(
+    name: str, index: dict[int, _IndexedFood], limit: int = MAX_CANDIDATES, prefix: bool = False,
+) -> list[_IndexedFood]:
     """
     Ciqual foods whose name is close to the ingredient's: shared words, minus the
     extra words of the food's main term ("Haricot beurre" for "beurre"), a little
     for its qualifiers after the comma, with a bonus when both names start with the
     same word and a small one for raw forms (recipes list raw ingredients).
     The right food only has to be among the candidates: Mistral picks the final one.
+    With `prefix` (autocomplete), the last word may be incomplete: "cham" → "champignon".
     """
     query_tokens = [synonym for token in _tokens(name) for synonym in SEARCH_SYNONYMS.get(token, [token])]
     query = set(query_tokens)
     if not query:
         return []
+    typed = query_tokens[-1] if prefix else None
 
     scored: list[tuple[float, _IndexedFood]] = []
     for food in index.values():
-        shared = len(query & food.tokens)
+        # Words of the food that the query covers (the typed word may be a prefix of one)
+        covered = query & food.tokens
+        completed = {t for t in food.tokens if typed and t.startswith(typed)} - covered
+        shared = len(covered) + (1 if completed and typed not in covered else 0)
         if shared == 0:
             continue
+        starts_alike = food.first_token == query_tokens[0] or (
+            typed is not None and len(query_tokens) == 1 and food.first_token.startswith(typed)
+        )
         score = (
             2 * shared / len(query)
-            - 0.15 * len(food.main_tokens - query)
+            - 0.15 * len(food.main_tokens - query - completed)
             - 0.02 * len(food.tokens - food.main_tokens)
-            + (0.5 if food.first_token == query_tokens[0] else 0)
+            + (0.5 if starts_alike else 0)
             + (0.1 if food.is_raw else 0)
         )
         scored.append((score, food))
 
     scored.sort(key=lambda pair: pair[0], reverse=True)
     return [food for _, food in scored[:limit]]
+
+
+async def search_foods(query: str, db: AsyncSession, limit: int = 8) -> list[dict]:
+    """
+    Ciqual foods matching a free-text query, for the ingredient autocomplete of the
+    edit form. Same ranking as the automatic matching; no LLM, so it's instant.
+    """
+    index = await get_ciqual_index(db)
+    return [
+        {"code": food.code, "name_fr": food.name, "aisle": store_aisle(food)}
+        for food in find_candidates(query, index, limit=limit, prefix=True)
+    ]
 
 
 # ── Mistral ────────────────────────────────────────────────────────────────────
@@ -241,7 +263,7 @@ def _standard_weight(ingredient: Ingredient) -> float | None:
     return parsed[0] * factor * grams if grams else None
 
 
-def _store_aisle(food: _IndexedFood) -> str:
+def store_aisle(food: _IndexedFood) -> str:
     """
     Ciqual groups foods by kind, stores by how they're sold: canned vegetables are
     in the grocery aisle, dried / powdered herbs and vegetables with the spices.
@@ -337,7 +359,7 @@ async def _match_ciqual(ingredients: list[Ingredient], index: dict[int, _Indexed
             continue
         ingredient.ciqual_code = code
         # The official aisle wins, except for Ciqual's catch-all groups (prepared dishes…)
-        if (aisle := _store_aisle(index[code])) != "other":
+        if (aisle := store_aisle(index[code])) != "other":
             ingredient.aisle = aisle
 
 
@@ -373,8 +395,9 @@ def compute_macros(recipe: Recipe, index: dict[int, _IndexedFood]) -> dict[str, 
 
 async def enrich_recipe(recipe: Recipe, db: AsyncSession, update_macros: bool = False) -> None:
     """
-    Enriches the recipe's not-yet-enriched ingredients (canonical_name is null),
-    and with `update_macros`, replaces the recipe's macros by the Ciqual computation
+    Enriches the recipe's not-yet-enriched ingredients (canonical_name is null), keeping
+    the Ciqual links already set (chosen by the user), aligns every linked ingredient's
+    aisle on its Ciqual food, and with `update_macros`, replaces the recipe's macros by the Ciqual computation
     when it's complete. `recipe.ingredients` must be loaded. Never raises on LLM errors.
     """
     pending = [i for i in recipe.ingredients if i.canonical_name is None and not is_section_marker(i)]
@@ -384,9 +407,16 @@ async def enrich_recipe(recipe: Recipe, db: AsyncSession, update_macros: bool = 
         try:
             await _normalize(pending)
             if index:
-                await _match_ciqual([i for i in pending if i.canonical_name], index)
+                # Links chosen by the user in the edit form are never re-guessed
+                await _match_ciqual([i for i in pending if i.canonical_name and i.ciqual_code is None], index)
         except (httpx.HTTPError, ValueError, KeyError) as exc:
             logger.warning("Ingredient enrichment failed for recipe %s: %s", recipe.id, exc)
+
+    # The aisle always follows the linked food (also after a link fixed by hand)
+    for ingredient in recipe.ingredients:
+        food = index.get(ingredient.ciqual_code) if ingredient.ciqual_code else None
+        if food and (aisle := store_aisle(food)) != "other":
+            ingredient.aisle = aisle
 
     macros = compute_macros(recipe, index) if update_macros and index else None
     if macros:
@@ -400,12 +430,16 @@ async def enrich_recipe(recipe: Recipe, db: AsyncSession, update_macros: bool = 
         await db.refresh(recipe, attribute_names=["updated_at"])
 
 
-def reset_enrichment(ingredient: Ingredient) -> None:
-    """Marks an ingredient as not enriched, so the next enrichment redoes it."""
+def reset_enrichment(ingredient: Ingredient, keep_link: bool = True) -> None:
+    """
+    Marks an ingredient as not enriched, so the next enrichment redoes it. The Ciqual
+    link is kept unless `keep_link` is False (it may have been chosen by the user).
+    """
     ingredient.canonical_name = None
     ingredient.aisle = None
     ingredient.weight_g = None
-    ingredient.ciqual_code = None
+    if not keep_link:
+        ingredient.ciqual_code = None
 
 
 def copy_enrichment(source: Ingredient, target: Ingredient) -> None:
