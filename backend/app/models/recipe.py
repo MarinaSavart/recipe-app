@@ -5,6 +5,7 @@ from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text, Uniqu
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+from app.models.ciqual import CiqualFood
 
 class Recipe(Base):
     __tablename__ = "recipes"
@@ -64,7 +65,16 @@ class Ingredient(Base):
     unit: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)       # "g"
     notes: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)     # "5% fat"
 
+    # Enrichment (Mistral + Ciqual), null until the ingredient has been enriched
+    canonical_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)  # "gousses d'ail" → "ail"
+    aisle: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)            # store aisle key
+    weight_g: Mapped[Optional[float]] = mapped_column(Float, nullable=True)            # estimated weight of the quantity
+    ciqual_code: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("ciqual_foods.code", ondelete="SET NULL"), nullable=True
+    )
+
     recipe: Mapped["Recipe"] = relationship("Recipe", back_populates="ingredients")
+    ciqual_food: Mapped[Optional["CiqualFood"]] = relationship("CiqualFood")
 
 
 class Step(Base):

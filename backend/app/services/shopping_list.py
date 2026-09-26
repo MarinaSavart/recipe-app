@@ -1,9 +1,10 @@
 """
 Builds a menu's shopping list: every recipe's ingredients scaled to the
 portions used in the menu (not the recipe's own servings), then merged
-by ingredient name and unit.
+by ingredient (canonical name when enriched, e.g. "gousses d'ail" → "ail") and unit.
 """
 import re
+import unicodedata
 from dataclasses import dataclass, field
 
 from app.models.menu import MenuItem
@@ -39,19 +40,20 @@ class ShoppingLine:
     name: str
     unit: str | None
     quantity: float | None = None
+    aisle: str | None = None  # from the ingredients' enrichment (Ciqual / Mistral)
     # Quantities that couldn't be parsed, kept as written ("quelques gouttes")
     extras: list[str] = field(default_factory=list)
     recipes: list[str] = field(default_factory=list)
 
 
-def _normalize_unit(unit: str | None) -> tuple[str | None, float]:
+def normalize_unit(unit: str | None) -> tuple[str | None, float]:
     if not unit or not unit.strip():
         return None, 1
     key = unit.strip().lower().rstrip(".")
     return UNIT_ALIASES.get(key, (key, 1))
 
 
-def _parse_quantity(raw: str) -> tuple[float, str | None] | None:
+def parse_quantity(raw: str) -> tuple[float, str | None] | None:
     """Parses a free-text quantity into (number, unit found in the text), or None."""
     match = QUANTITY_RE.match(raw.strip().lower())
     if not match:
@@ -71,6 +73,12 @@ def _parse_quantity(raw: str) -> tuple[float, str | None] | None:
     return value, match["unit"]
 
 
+def _merge_key(name: str) -> str:
+    """Case- and accent-insensitive key: "Pêche" and "peche" are the same line."""
+    decomposed = unicodedata.normalize("NFD", name.lower().replace("œ", "oe"))
+    return "".join(c for c in decomposed if unicodedata.category(c) != "Mn")
+
+
 def build_shopping_list(items: list[MenuItem]) -> list[ShoppingLine]:
     """
     Merges the ingredients of the menu's recipes, each scaled by
@@ -86,16 +94,17 @@ def build_shopping_list(items: list[MenuItem]) -> list[ShoppingLine]:
         factor = item.portions / (recipe.servings or 1)
 
         for ingredient in recipe.ingredients:
-            name = ingredient.name.strip()
+            name = (ingredient.canonical_name or ingredient.name).strip()
             if not name or (ingredient.notes or "").strip().lower() == SECTION_MARKER:
                 continue
 
-            parsed = _parse_quantity(ingredient.quantity) if ingredient.quantity else None
+            parsed = parse_quantity(ingredient.quantity) if ingredient.quantity else None
             unit_text = ingredient.unit or (parsed[1] if parsed else None)
-            unit, unit_factor = _normalize_unit(unit_text)
+            unit, unit_factor = normalize_unit(unit_text)
 
-            key = (name.lower(), unit)
+            key = (_merge_key(name), unit)
             line = lines.setdefault(key, ShoppingLine(name=name, unit=unit))
+            line.aisle = line.aisle or ingredient.aisle
             if recipe.title not in line.recipes:
                 line.recipes.append(recipe.title)
 

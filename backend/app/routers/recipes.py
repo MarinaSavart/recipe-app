@@ -15,6 +15,7 @@ from app.schemas.recipe import (
     RecipeOut,
     RecipeUpdate,
 )
+from app.services import ingredient_enrichment as enrichment_service
 from app.services import recipe as recipe_service
 from app.services import storage as storage_service
 from app.services.claude import parse_recipe
@@ -46,7 +47,8 @@ async def import_from_url(
     Steps:
       1. yt-dlp extracts the description and metadata
       2. Claude parses the description into a structured recipe
-      3. We save it to the database and return the recipe
+      3. We save it to the database, enrich its ingredients (Mistral + Ciqual)
+         and return the recipe
     A category can optionally be supplied to override Claude's guess,
     for cases where it can't be reliably inferred from the video.
     """
@@ -94,6 +96,8 @@ async def import_from_url(
     )
 
     saved_recipe = await recipe_service.get_or_404(recipe.id, db)
+    # Canonical names, aisles, Ciqual links; macros recomputed from Ciqual when complete
+    await enrichment_service.enrich_recipe(saved_recipe, db, update_macros=True)
     await recipe_service.attach_like_metadata(saved_recipe, db, current_user)
     return saved_recipe
 
@@ -140,6 +144,8 @@ async def import_manual(
     )
 
     saved_recipe = await recipe_service.get_or_404(recipe.id, db)
+    # Canonical names, aisles, Ciqual links; macros recomputed from Ciqual when complete
+    await enrichment_service.enrich_recipe(saved_recipe, db, update_macros=True)
     await recipe_service.attach_like_metadata(saved_recipe, db, current_user)
     return saved_recipe
 
@@ -250,6 +256,8 @@ async def update_recipe(
     recipe_service.ensure_owner(recipe, current_user)
     recipe = await recipe_service.apply_update(recipe, payload, db)
     updated_recipe = await recipe_service.get_or_404(recipe.id, db)
+    # Only new or changed ingredients are enriched; macros stay as the user set them
+    await enrichment_service.enrich_recipe(updated_recipe, db)
     await recipe_service.attach_like_metadata(updated_recipe, db, current_user)
     return updated_recipe
 

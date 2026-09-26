@@ -61,6 +61,7 @@ class ShoppingListItem(BaseModel):
     name: str
     quantity: float | None  # total scaled to the menu's portions, None if not measurable
     unit: str | None
+    aisle: str | None       # store aisle key, None when the ingredients aren't enriched yet
     extras: list[str]       # quantities that couldn't be added up, as written ("quelques gouttes")
     recipes: list[str]      # titles of the recipes that need this ingredient
     model_config = ConfigDict(from_attributes=True)

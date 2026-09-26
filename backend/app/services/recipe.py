@@ -6,6 +6,7 @@ from sqlalchemy.orm import selectinload
 from app.models.recipe import Ingredient, Recipe, RecipeLike, Step, Tag
 from app.models.user import User
 from app.schemas.recipe import RecipeCreate, RecipeUpdate
+from app.services.ingredient_enrichment import copy_enrichment
 
 
 async def get_or_404(recipe_id: int, db: AsyncSession) -> Recipe:
@@ -21,6 +22,9 @@ async def get_or_404(recipe_id: int, db: AsyncSession) -> Recipe:
             selectinload(Recipe.tags),
         )
         .where(Recipe.id == recipe_id)
+        # Reload collections already in the session: after apply_update() they still
+        # hold the deleted ingredients/steps/tags otherwise
+        .execution_options(populate_existing=True)
     )
     recipe = result.scalar_one_or_none()
     if not recipe:
@@ -187,12 +191,16 @@ async def apply_update(recipe: Recipe, payload: RecipeUpdate, db: AsyncSession) 
         if field in update_data:
             setattr(recipe, field, update_data[field])
 
-    # Fully replace the ingredients if provided
+    # Fully replace the ingredients if provided, keeping the enrichment of unchanged ones
     if "ingredients" in update_data:
+        previous = {(ing.name, ing.quantity, ing.unit): ing for ing in recipe.ingredients}
         for ing in recipe.ingredients:
             await db.delete(ing)
         for ing in payload.ingredients:
-            db.add(Ingredient(recipe_id=recipe.id, **ing.model_dump()))
+            new_ingredient = Ingredient(recipe_id=recipe.id, **ing.model_dump())
+            if unchanged := previous.get((ing.name, ing.quantity, ing.unit)):
+                copy_enrichment(unchanged, new_ingredient)
+            db.add(new_ingredient)
 
     # Fully replace the steps if provided
     if "steps" in update_data:
