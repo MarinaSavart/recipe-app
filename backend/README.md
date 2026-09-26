@@ -86,6 +86,20 @@ uvicorn app.main:app --reload
 L'API est disponible sur [http://localhost:8000](http://localhost:8000)
 La doc Swagger est disponible sur [http://localhost:8000/docs](http://localhost:8000/docs)
 
+### 7. Importe la table Ciqual (rayons et nutrition des ingrédients)
+
+```bash
+# Télécharge les fichiers XML de l'Anses dans backend/data/ciqual/ (~70 Mo, une seule fois) et remplit ciqual_foods
+python -m app.scripts.import_ciqual
+
+# Enrichit les ingrédients des recettes existantes (nom canonique, rayon, poids, lien Ciqual — Ollama requis)
+python -m app.scripts.enrich_ingredients
+# Options : --recipe-id 16 (une recette), --force (tout refaire),
+#           --update-macros (remplace les macros par le calcul Ciqual quand il est complet)
+```
+
+Les nouvelles recettes sont enrichies automatiquement à l'import. Leurs macros sont recalculées depuis Ciqual quand chaque ingrédient pesé a été relié à un aliment ; sinon l'estimation de Mistral est conservée.
+
 ---
 
 ## Endpoints
@@ -132,3 +146,4 @@ backend/
 - Les photos sont servies statiquement sur `/uploads/{filename}`
 - L'extraction Instagram nécessite d'être connecté dans un navigateur (Chrome, Firefox, Edge...)
 - En cas d'échec de l'extraction automatique, utilise l'import manuel
+- Données nutritionnelles : Anses. 2025. Table de composition nutritionnelle des aliments Ciqual. https://doi.org/10.57745/RDMHWY — Licence Ouverte Etalab 2.0 (la citation de la source est obligatoire, elle est affichée sous la liste de courses)
