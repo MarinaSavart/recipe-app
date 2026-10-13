@@ -20,16 +20,20 @@
 * asyncpg
 * Alembic
 * Pydantic v2
-* Ollama / Mistral pour le parsing des recettes
+* OpenRouter (Nemotron 3 Super) pour le parsing des recettes
 * yt-dlp pour l'extraction de métadonnées Instagram/TikTok
 * bcrypt pour le hashage des mots de passe
 * JWT pour l'authentification
 
 ### LLM
 
-* Ollama/Mistral est le moteur LLM actuellement utilisé
-* `anthropic` est disponible pour une éventuelle intégration future avec Claude API
-* Ne pas remplacer Ollama/Mistral par Claude API sans demande explicite
+* OpenRouter est le provider LLM utilisé (`app/services/claude.py`)
+* API compatible OpenAI — endpoint : `https://openrouter.ai/api/v1/chat/completions`
+* Modèle par défaut : `nvidia/nemotron-3-super-120b-a12b:free` (gratuit, quota limité)
+* Pour changer de modèle : modifier `OPENROUTER_MODEL` dans `.env` sans toucher au code
+* Ollama n'est plus requis pour le parsing — peut être désinstallé ou gardé en backup
+* Ne pas revenir à Ollama sans demande explicite
+* `ANTHROPIC_API_KEY` reste disponible pour une intégration future éventuelle
 
 ---
 
@@ -62,7 +66,7 @@ app/
 │
 ├── services/
 │   ├── extractor.py     # Wrapper yt-dlp
-│   ├── claude.py        # Ollama/Mistral parsing description → JSON
+│   ├── claude.py        # OpenRouter parsing description → JSON
 │   └── auth.py          # bcrypt + JWT
 │
 └── routers/
@@ -329,4 +333,4 @@ except ValueError as exc:
 * ❌ `except Exception: pass`
 * ❌ Modification directe du schéma DB sans migration Alembic
 * ❌ Utilisation de l'API Anthropic sans demande explicite
-* ❌ Remplacer Ollama/Mistral par Claude API sans demande explicite
+* ❌ Revenir à Ollama sans demande explicite
