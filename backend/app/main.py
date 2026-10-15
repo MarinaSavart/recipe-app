@@ -4,8 +4,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from app.config import settings
 from app.database import engine, Base
-from app.models import recipe as recipe_models  # noqa: F401 — import needed so Base "sees" the models
+from app.models import recipe as recipe_models  # noqa: F401
 from app.routers.recipes import router as recipes_router
 
 from app.routers.auth import router as auth_router
@@ -33,7 +34,7 @@ app = FastAPI(
 # Allows the frontend (Vite on :5173 or CRA on :3000) to call the API
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],
+    allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
