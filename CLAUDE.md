@@ -14,7 +14,7 @@
 ### Backend
 
 * Python 3.13 + FastAPI + SQLAlchemy 2.x (async) + PostgreSQL
-* Ollama (Mistral) pour le parsing des recettes
+* OpenRouter (Nemotron 3 Super) pour le parsing des recettes
 * yt-dlp pour l'extraction des métadonnées Instagram/TikTok
 
 ### Frontend
@@ -60,10 +60,7 @@ cd backend && docker-compose up -d
 # Terminal 2 — Backend
 cd backend && venv\Scripts\activate && uvicorn app.main:app --reload --port 8742
 
-# Terminal 3 — Ollama
-ollama run mistral
-
-# Terminal 4 — Frontend
+# Terminal 3 — Frontend
 cd frontend && npm run dev
 ```
 

@@ -6,6 +6,10 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     ANTHROPIC_API_KEY: Optional[str] = None
 
+    # LLM (OpenRouter)
+    OPENROUTER_API_KEY: str
+    OPENROUTER_MODEL: str = "nvidia/nemotron-3-super-120b-a12b:free"
+
     # Auth
     SECRET_KEY: str
     ALGORITHM: str = "HS256"

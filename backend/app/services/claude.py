@@ -2,11 +2,11 @@ import json
 
 import httpx
 
+from app.config import settings
 from app.schemas.recipe import IngredientCreate, RecipeCreate, StepCreate
 
-# Ollama runs locally on this port by default
-OLLAMA_URL = "http://localhost:11434/api/generate"
-OLLAMA_MODEL = "mistral"
+# OpenRouter exposes an OpenAI-compatible chat completions API
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 # ── System prompt ──────────────────────────────────────────────────────────────
 SYSTEM_PROMPT = """
@@ -68,33 +68,38 @@ RÈGLES GÉNÉRALES :
 # ── Main function ──────────────────────────────────────────────────────────────
 async def parse_recipe(raw_description: str, suggested_title: str | None = None) -> RecipeCreate:
     """
-    Sends the description to Ollama (llama3.2 locally) and returns
+    Sends the description to OpenRouter and returns
     a RecipeCreate ready to be saved to the database.
     """
 
-    # We combine the system prompt and the user content into a single prompt
-    # because Ollama's /api/generate mode has no separate system/user roles
     user_content = raw_description
     if suggested_title:
         user_content = f"Titre de la video : {suggested_title}\n\n{raw_description}"
 
-    full_prompt = f"{SYSTEM_PROMPT}\n\nVoici la description à parser :\n\n{user_content}"
-
-    # Call to Ollama — stream:false so we wait for the full response
-    async with httpx.AsyncClient(timeout=180.0) as client:
+    async with httpx.AsyncClient(timeout=120.0) as client:
         response = await client.post(
-            OLLAMA_URL,
+            OPENROUTER_URL,
+            headers={
+                "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
+                "Content-Type": "application/json",
+                # Recommended by OpenRouter to identify the app
+                "HTTP-Referer": "https://mise-en-bouche.app",
+                "X-Title": "Mise en Bouche",
+            },
             json={
-                "model": OLLAMA_MODEL,
-                "prompt": full_prompt,
-                "stream": False,        # we want the response in one go
-                "format": "json",       # forces Ollama to return valid JSON
-            }
+                "model": settings.OPENROUTER_MODEL,
+                "messages": [
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": user_content},
+                ],
+                "response_format": {"type": "json_object"},  # forces valid JSON
+                "temperature": 0.1,  # structured parsing → low temperature
+            },
         )
         response.raise_for_status()
 
     result = response.json()
-    raw_json = result["response"].strip()
+    raw_json = result["choices"][0]["message"]["content"].strip()
 
     # Strip backticks just in case
     if raw_json.startswith("```"):
