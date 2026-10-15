@@ -11,11 +11,6 @@ Installe ces outils avant de commencer :
 - [Python 3.12+](https://python.org) — en cochant "Add to PATH"
 - [Node.js 20+](https://nodejs.org)
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) — pour PostgreSQL
-- [Ollama](https://ollama.com/download) — puis lance :
-
-```bash
-ollama pull mistral
-```
 
 ---
 
@@ -82,9 +77,10 @@ uvicorn app.main:app --reload --port 8742
 
 > `alembic upgrade head` applique les migrations en attente (nouvelles colonnes, tables...). À relancer à chaque fois que tu récupères des changements qui incluent une migration (`git pull`).
 
-**Terminal 3 — Ollama**
+**Terminal 3 — Plus nécessaire !**
 ```bash
-ollama run mistral
+# Le parsing est maintenant géré par OpenRouter (cloud)
+# Assure-toi d'avoir OPENROUTER_API_KEY dans backend/.env
 ```
 
 **Terminal 4 — Frontend**
@@ -109,7 +105,7 @@ npm run dev
 
 ```
 recipe-app/
-├── backend/        # FastAPI + PostgreSQL + Ollama
+├── backend/        # FastAPI + PostgreSQL + OpenRouter
 ├── frontend/       # React + TypeScript + Vite
 └── README.md
 ```
