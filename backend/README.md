@@ -80,7 +80,7 @@ docker-compose up -d
 ### 6. Lance le serveur
 
 ```bash
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --port 8742
 ```
 
 L'API est disponible sur [http://localhost:8000](http://localhost:8000)

@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.database import engine, Base
-from app.models import recipe as recipe_models  # noqa: F401 — import needed so Base "sees" the models
+from app.models import recipe as recipe_models  # noqa: F401
 from app.routers.recipes import router as recipes_router
 
 from app.routers.auth import router as auth_router

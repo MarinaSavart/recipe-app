@@ -58,7 +58,7 @@ recipe-app/
 cd backend && docker-compose up -d
 
 # Terminal 2 — Backend
-cd backend && venv\Scripts\activate && uvicorn app.main:app --reload
+cd backend && venv\Scripts\activate && uvicorn app.main:app --reload --port 8742
 
 # Terminal 3 — Ollama
 ollama run mistral

@@ -71,13 +71,13 @@ docker-compose up -d
 cd backend
 venv\Scripts\activate
 alembic upgrade head
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --port 8742
 
 # Mac / Linux
 cd backend
 source venv/bin/activate
 alembic upgrade head
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --port 8742
 ```
 
 > `alembic upgrade head` applique les migrations en attente (nouvelles colonnes, tables...). À relancer à chaque fois que tu récupères des changements qui incluent une migration (`git pull`).
