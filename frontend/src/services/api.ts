@@ -38,7 +38,7 @@ function authHeaders(): Record<string, string> {
 
 /**
  * Performs an authenticated JSON request against the backend API.
- * On a 401, clears the stored session and redirects to /login. On a 403,
+ * On a 401 with a stored token, clears the session and redirects to /login. On a 403,
  * throws a generic "not authorized" error. On other non-OK responses,
  * throws an error built from the backend's error detail when available.
  *
@@ -55,7 +55,9 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
         ...options,
     })
 
-    if (res.status === 401) {
+    // Only an authenticated request means an expired session; a 401 on login
+    // (wrong credentials) falls through so the backend's message is shown
+    if (res.status === 401 && localStorage.getItem('token')) {
         localStorage.removeItem('token')
         localStorage.removeItem('user')
         window.location.href = '/login'
