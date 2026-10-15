@@ -12,6 +12,11 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080  # 7 days
     GOOGLE_CLIENT_ID: Optional[str] = None
 
+    # CORS — comma-separated list of allowed origins
+    ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
+    # Optional regex for dynamic origins (e.g. Vercel preview deployments)
+    ALLOWED_ORIGIN_REGEX: Optional[str] = None
+
     class Config:
         env_file = ".env"
 
