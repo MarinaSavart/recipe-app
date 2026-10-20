@@ -16,6 +16,9 @@ export interface Menu {
   createdAt: string
   updatedAt: string
   items: MenuItem[]
+  isOwner: boolean     // false for a menu shared with the user (guests can do everything but delete it)
+  ownerName: string
+  guestsCount: number  // users the menu is shared with
 }
 
 /** Lightweight menu shape — used on the menu list page. */
@@ -25,6 +28,16 @@ export interface MenuListItem {
   mealsCount: number
   recipesCount: number
   createdAt: string
+  isOwner: boolean
+  ownerName: string
+  guestsCount: number
+}
+
+/** A user a menu is shared with (shown to the owner). */
+export interface MenuGuest {
+  id: number
+  name: string | null
+  email: string
 }
 
 /** Parameters of an automatic menu generation. */

@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { deleteMenu, getMenus } from '../services/api'
+import { useAuth } from '../context/AuthContext'
+import { deleteMenu, getMenus, removeMenuGuest } from '../services/api'
 import type { MenuListItem } from '../types/menu'
-import { formatShortDate } from '../utils/menu'
+import { deleteMenuConfirmMessage, formatShortDate } from '../utils/menu'
 
 type MenusState =
   | { status: 'loading' }
   | { status: 'error'; message: string }
   | { status: 'ready'; menus: MenuListItem[] }
 
-/** Lists the user's saved weekly menus, with create / view / delete actions. */
+/** Lists the user's saved weekly menus and the ones shared with them, with create / view / delete actions. */
 export default function MenuList() {
   const navigate = useNavigate()
+  const userId = useAuth().user?.id
   const [state, setState] = useState<MenusState>({ status: 'loading' })
 
   useEffect(() => {
@@ -22,9 +24,21 @@ export default function MenuList() {
 
   /** Deletes a menu after confirmation and removes it from the list. */
   async function handleDelete(menu: MenuListItem) {
-    if (!confirm(`Supprimer le menu "${menu.name}" ?`)) return
+    if (!confirm(deleteMenuConfirmMessage(menu))) return
     try {
       await deleteMenu(menu.id)
+      setState(s => s.status === 'ready' ? { ...s, menus: s.menus.filter(m => m.id !== menu.id) } : s)
+    } catch (e) {
+      alert((e as Error).message)
+    }
+  }
+
+  /** Guest side: leaves a shared menu after confirmation and removes it from the list. */
+  async function handleLeave(menu: MenuListItem) {
+    if (!userId) return
+    if (!confirm(`Ne plus partager "${menu.name}" ? Il disparaîtra de tes menus.`)) return
+    try {
+      await removeMenuGuest(menu.id, userId)
       setState(s => s.status === 'ready' ? { ...s, menus: s.menus.filter(m => m.id !== menu.id) } : s)
     } catch (e) {
       alert((e as Error).message)
@@ -69,14 +83,25 @@ export default function MenuList() {
           {state.menus.map(menu => (
             <li key={menu.id} className="menu-list__item">
               <div className="menu-list__info">
-                <div className="menu-list__name">{menu.name}</div>
+                <div className="menu-list__name">
+                  {menu.name}
+                  {!menu.isOwner ? (
+                    <span className="menu-list__badge">👥 Partagé par {menu.ownerName}</span>
+                  ) : menu.guestsCount > 0 && (
+                    <span className="menu-list__badge">👥 Partagé</span>
+                  )}
+                </div>
                 <div className="menu-list__meta">
                   Créé le {formatShortDate(menu.createdAt)} · {menu.mealsCount} repas · {menu.recipesCount} recette{menu.recipesCount > 1 ? 's' : ''}
                 </div>
               </div>
               <div className="menu-list__actions">
                 <button className="btn-ghost" onClick={() => navigate(`/menus/${menu.id}`)}>Voir</button>
-                <button className="btn-ghost btn-ghost--danger" onClick={() => handleDelete(menu)}>Supprimer</button>
+                {menu.isOwner ? (
+                  <button className="btn-ghost btn-ghost--danger" onClick={() => handleDelete(menu)}>Supprimer</button>
+                ) : (
+                  <button className="btn-ghost btn-ghost--danger" onClick={() => handleLeave(menu)}>Ne plus partager</button>
+                )}
               </div>
             </li>
           ))}

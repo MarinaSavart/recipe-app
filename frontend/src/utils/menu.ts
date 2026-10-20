@@ -1,6 +1,6 @@
 import type { NutritionalGoals } from '../types/profil'
 import type { RecipeListItem } from '../types/recipe'
-import { MENU_CATEGORY, type MealNutrition, type MenuItem } from '../types/menu'
+import { MENU_CATEGORY, type MealNutrition, type MenuGuest, type MenuItem } from '../types/menu'
 import { CATEGORIES } from './categories'
 
 /** Accepted gap between a value and its target (±15%). */
@@ -125,4 +125,22 @@ export function defaultMenuName(today: Date = new Date()): string {
   const monday = new Date(today)
   monday.setDate(today.getDate() - ((today.getDay() + 6) % 7))
   return `Semaine du ${monday.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`
+}
+
+/** Invitation URL of a shared menu, opened by guests to join it. */
+export function menuInviteUrl(token: string, origin: string = window.location.origin): string {
+  return `${origin}/menus/join/${token}`
+}
+
+/** How a guest is shown to the menu's owner: their name, else their email. */
+export function guestLabel(guest: MenuGuest): string {
+  return guest.name || guest.email
+}
+
+/** Confirmation asked before the owner deletes a menu, with a warning when it's shared. */
+export function deleteMenuConfirmMessage(menu: { name: string; guestsCount: number }): string {
+  const question = `Supprimer le menu "${menu.name}" ?`
+  if (menu.guestsCount === 0) return question
+  const people = menu.guestsCount > 1 ? `${menu.guestsCount} personnes` : '1 personne'
+  return `⚠️ Attention, ce menu est partagé avec ${people}. Si tu le supprimes, plus personne ne pourra le voir.\n\n${question}`
 }

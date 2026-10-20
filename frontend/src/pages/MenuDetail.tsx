@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import MenuRecipeRow from '../components/MenuRecipeRow'
+import MenuSharePanel from '../components/MenuSharePanel'
 import NutritionSummary from '../components/NutritionSummary'
 import RecipePickerModal from '../components/RecipePickerModal'
 import ShoppingList from '../components/ShoppingList'
@@ -10,16 +11,27 @@ import {
   deleteMenu,
   deleteMenuItem,
   getMenu,
+  getMenuGuests,
+  getMenuShareToken,
   getRecipes,
   getShoppingList,
+  removeMenuGuest,
   updateMenu,
   updateMenuItem,
 } from '../services/api'
 import { loadGoals } from '../services/goals'
-import type { Menu, MenuItem, ShoppingListItem } from '../types/menu'
+import type { Menu, MenuGuest, MenuItem, ShoppingListItem } from '../types/menu'
 import { DEFAULT_GOALS, type NutritionalGoals } from '../types/profil'
 import type { RecipeListItem } from '../types/recipe'
-import { averagePerMeal, groupByCategory, perMealTargets, totalMeals } from '../utils/menu'
+import {
+  averagePerMeal,
+  deleteMenuConfirmMessage,
+  groupByCategory,
+  guestLabel,
+  menuInviteUrl,
+  perMealTargets,
+  totalMeals,
+} from '../utils/menu'
 
 type MenuState =
   | { status: 'loading' }
@@ -40,6 +52,11 @@ type ShoppingState =
   | { status: 'loading'; items: ShoppingListItem[] }
   | { status: 'ready'; items: ShoppingListItem[] }
 
+/** Owner's sharing panel: closed, or open with the invitation link (null while loading) and the guests. */
+type ShareState =
+  | { status: 'closed' }
+  | { status: 'open'; inviteUrl: string | null; guests: MenuGuest[] }
+
 /** A menu as a list of recipes grouped by category, with edit actions and a nutritional recap. */
 export default function MenuDetail() {
   const { id } = useParams<{ id: string }>()
@@ -56,6 +73,7 @@ export default function MenuDetail() {
   const [showSummary, setShowSummary] = useState(false)
   const [toast, setToast] = useState<Toast | null>(null)
   const [shopping, setShopping] = useState<ShoppingState>({ status: 'closed' })
+  const [share, setShare] = useState<ShareState>({ status: 'closed' })
   const shoppingRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
@@ -168,9 +186,71 @@ export default function MenuDetail() {
   }
 
   async function handleDeleteMenu() {
-    if (!confirm(`Supprimer le menu "${menu.name}" ?`)) return
+    if (!confirm(deleteMenuConfirmMessage(menu))) return
     const ok = await mutate(() => deleteMenu(menu.id))
     if (ok) navigate('/menus')
+  }
+
+  /** Fetches the invitation link (created on first share) and the guests into the open panel. */
+  async function loadShare() {
+    const [token, guests] = await Promise.all([getMenuShareToken(menu.id), getMenuGuests(menu.id)])
+    setShare({ status: 'open', inviteUrl: menuInviteUrl(token), guests })
+  }
+
+  /** Opens the owner's sharing panel, or closes it. */
+  function toggleShare() {
+    if (share.status === 'open') {
+      setShare({ status: 'closed' })
+      return
+    }
+    setShare({ status: 'open', inviteUrl: null, guests: [] })
+    loadShare().catch((e: Error) => {
+      setShare({ status: 'closed' })
+      showToast(e.message, 'error')
+    })
+  }
+
+  async function handleCopyLink() {
+    if (share.status !== 'open' || !share.inviteUrl) return
+    try {
+      await navigator.clipboard.writeText(share.inviteUrl)
+      showToast('Lien copié ✓', 'success')
+    } catch {
+      showToast('Impossible de copier le lien, copie-le à la main', 'error')
+    }
+  }
+
+  /** Owner side: stops sharing with a guest. The backend revokes the old link, so a new one is loaded. */
+  async function handleRemoveGuest(guest: MenuGuest) {
+    if (!confirm(`Ne plus partager "${menu.name}" avec ${guestLabel(guest)} ? Le menu disparaîtra de ses menus.`)) return
+    setBusy(true)
+    try {
+      await removeMenuGuest(menu.id, guest.id)
+      setState(s => s.status === 'ready'
+        ? { ...s, menu: { ...s.menu, guestsCount: s.menu.guestsCount - 1 } }
+        : s)
+      await loadShare()
+      showToast('Partage retiré — un nouveau lien a été créé', 'success')
+    } catch (e) {
+      showToast((e as Error).message, 'error')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  /** Guest side: leaves the shared menu, which then disappears from their menus. */
+  async function handleLeaveMenu() {
+    if (!userId) return
+    if (!confirm(`Ne plus partager "${menu.name}" ? Il disparaîtra de tes menus.`)) return
+    // Not through mutate(): the open shopping list would be reloaded on a menu we no longer access
+    setBusy(true)
+    try {
+      await removeMenuGuest(menu.id, userId)
+      navigate('/menus')
+    } catch (e) {
+      showToast((e as Error).message, 'error')
+      setBusy(false)
+    }
   }
 
   return (
@@ -188,6 +268,13 @@ export default function MenuDetail() {
         <p className={`menu-detail__count ${meals === menu.mealsCount ? '' : 'menu-detail__count--off'}`}>
           {meals} / {menu.mealsCount} repas · {menu.items.length} recette{menu.items.length > 1 ? 's' : ''}
         </p>
+        {!menu.isOwner ? (
+          <p className="menu-detail__shared">👥 Partagé par {menu.ownerName}</p>
+        ) : menu.guestsCount > 0 && (
+          <p className="menu-detail__shared">
+            👥 Partagé avec {menu.guestsCount} personne{menu.guestsCount > 1 ? 's' : ''}
+          </p>
+        )}
       </div>
 
       <div className="menu-detail__actions">
@@ -220,10 +307,36 @@ export default function MenuDetail() {
         >
           💾 Sauvegarder
         </button>
-        <button className="btn-ghost btn-ghost--danger" onClick={handleDeleteMenu} disabled={busy}>
-          🗑 Supprimer le menu
-        </button>
+        {menu.isOwner ? (
+          <>
+            <button
+              className={`btn-ghost menu-detail__toggle ${share.status === 'open' ? 'menu-detail__toggle--active' : ''}`}
+              onClick={toggleShare}
+              aria-expanded={share.status === 'open'}
+            >
+              🔗 Partager
+            </button>
+            <button className="btn-ghost btn-ghost--danger" onClick={handleDeleteMenu} disabled={busy}>
+              🗑 Supprimer le menu
+            </button>
+          </>
+        ) : (
+          <button className="btn-ghost btn-ghost--danger" onClick={handleLeaveMenu} disabled={busy}>
+            🚪 Ne plus partager
+          </button>
+        )}
       </div>
+
+      {share.status === 'open' && (
+        <MenuSharePanel
+          inviteUrl={share.inviteUrl}
+          guests={share.guests}
+          busy={busy}
+          onCopy={handleCopyLink}
+          onRemoveGuest={handleRemoveGuest}
+          onClose={() => setShare({ status: 'closed' })}
+        />
+      )}
 
       {showSummary && (
         <NutritionSummary average={averagePerMeal(menu.items)} targets={perMealTargets(goals)} />

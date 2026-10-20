@@ -37,6 +37,18 @@
   &__name    { font-family: $font-display; font-size: 18px; margin-bottom: 2px; }
   &__meta    { font-size: 12px; color: $muted; }
   &__actions { display: flex; gap: $spacing-sm; flex-shrink: 0; }
+
+  &__badge {
+    display: inline-block;
+    margin-left: $spacing-sm;
+    padding: 2px $spacing-sm;
+    border: 1px solid $amber-dim;
+    border-radius: $radius-full;
+    color: $amber;
+    font-family: $font-body;
+    font-size: 11px;
+    vertical-align: middle;
+  }
 }
 
 // ── Création de menu ───────────────────────────────────────────────────────────
@@ -104,6 +116,12 @@
     margin-top: $spacing-xs;
 
     &--off { color: #e67e22; }
+  }
+
+  &__shared {
+    font-size: 13px;
+    color: $amber;
+    margin-top: $spacing-xs;
   }
 
   &__main { min-width: 0; }
@@ -520,6 +538,88 @@
     text-decoration: underline;
 
     &:hover { color: $amber; }
+  }
+}
+
+// ── Partage d'un menu ──────────────────────────────────────────────────────────
+.menu-share {
+  max-width: 820px;
+  background: $card;
+  border: 1px solid $border;
+  border-radius: $radius-lg;
+  padding: $spacing-md $spacing-lg;
+  margin-bottom: $spacing-lg;
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: $spacing-md;
+    margin-bottom: $spacing-md;
+  }
+
+  &__title { font-family: $font-display; font-size: 20px; line-height: 1.2; }
+  &__hint  { font-size: 12px; color: $muted; margin-top: 2px; }
+
+  &__close {
+    color: $muted;
+    font-size: 20px;
+    line-height: 1;
+    transition: color $transition;
+
+    &:hover { color: $text; }
+  }
+
+  &__link {
+    display: flex;
+    gap: $spacing-sm;
+    margin-bottom: $spacing-lg;
+  }
+
+  &__input {
+    flex: 1;
+    min-width: 0;
+    background: $surface;
+    border: 1px solid $border;
+    border-radius: $radius-md;
+    color: $text;
+    font-size: 13px;
+    padding: $spacing-sm $spacing-md;
+    outline: none;
+
+    &:focus { border-color: $amber-dim; }
+  }
+
+  &__subtitle {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: $muted;
+    margin-bottom: $spacing-sm;
+  }
+
+  &__empty { font-size: 13px; color: $muted; }
+
+  &__guests {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+  }
+
+  &__guest {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: $spacing-md;
+  }
+
+  &__guest-name {
+    font-size: 14px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 

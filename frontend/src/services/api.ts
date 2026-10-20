@@ -1,5 +1,5 @@
 import type { CiqualFood, Recipe, RecipeListItem, UpdateRecipePayload } from "../types/recipe"
-import type { Menu, MenuGenerateParams, MenuItem, MenuListItem, ShoppingListItem } from "../types/menu"
+import type { Menu, MenuGenerateParams, MenuGuest, MenuItem, MenuListItem, ShoppingListItem } from "../types/menu"
 import { DEFAULT_GOALS, type SyncedNutritionalGoals } from "../types/profil"
 
 // The backend returns is_liked / likes_count in snake_case (like the rest of the JSON);
@@ -216,6 +216,9 @@ interface RawMenu {
   created_at: string
   updated_at: string
   items: RawMenuItem[]
+  is_owner: boolean
+  owner_name: string
+  guests_count: number
 }
 
 interface RawMenuListItem {
@@ -224,6 +227,9 @@ interface RawMenuListItem {
   meals_count: number
   recipes_count: number
   created_at: string
+  is_owner: boolean
+  owner_name: string
+  guests_count: number
 }
 
 /** Converts a raw API menu item into the frontend's MenuItem shape. */
@@ -245,10 +251,13 @@ function mapMenu(raw: RawMenu): Menu {
     createdAt: raw.created_at,
     updatedAt: raw.updated_at,
     items: raw.items.map(mapMenuItem),
+    isOwner: raw.is_owner,
+    ownerName: raw.owner_name,
+    guestsCount: raw.guests_count,
   }
 }
 
-/** Fetches the current user's menus, most recent first. */
+/** Fetches the current user's menus and the ones shared with them, most recent first. */
 export async function getMenus(): Promise<MenuListItem[]> {
   const raw = await request<RawMenuListItem[]>('/menus/')
   return raw.map(m => ({
@@ -257,10 +266,13 @@ export async function getMenus(): Promise<MenuListItem[]> {
     mealsCount: m.meals_count,
     recipesCount: m.recipes_count,
     createdAt: m.created_at,
+    isOwner: m.is_owner,
+    ownerName: m.owner_name,
+    guestsCount: m.guests_count,
   }))
 }
 
-/** Asks the backend (Ollama) to generate and save a menu covering the given number of meals. */
+/** Asks the backend (OpenRouter) to generate and save a menu covering the given number of meals. */
 export async function generateMenu(params: MenuGenerateParams): Promise<Menu> {
   const raw = await request<RawMenu>('/menus/generate', {
     method: 'POST',
@@ -317,6 +329,30 @@ export async function getShoppingList(menuId: number): Promise<ShoppingListItem[
 /** Removes a recipe from a menu. */
 export async function deleteMenuItem(menuId: number, itemId: number): Promise<void> {
   await request<void>(`/menus/${menuId}/items/${itemId}`, { method: 'DELETE' })
+}
+
+/** Fetches (creating it on first share) the token of a menu's invitation link (owner only). */
+export async function getMenuShareToken(menuId: number): Promise<string> {
+  const raw = await request<{ token: string }>(`/menus/${menuId}/share-link`, { method: 'POST' })
+  return raw.token
+}
+
+/** Joins a menu through its invitation token and returns it. */
+export async function joinMenu(token: string): Promise<Menu> {
+  return mapMenu(await request<RawMenu>(`/menus/join/${encodeURIComponent(token)}`, { method: 'POST' }))
+}
+
+/** Fetches the users a menu is shared with (owner only). */
+export async function getMenuGuests(menuId: number): Promise<MenuGuest[]> {
+  return request<MenuGuest[]>(`/menus/${menuId}/shares`)
+}
+
+/**
+ * Stops sharing a menu with a user: the owner removes a guest (which also revokes
+ * the invitation link), or a guest leaves the menu with their own id.
+ */
+export async function removeMenuGuest(menuId: number, userId: number): Promise<void> {
+  await request<void>(`/menus/${menuId}/shares/${userId}`, { method: 'DELETE' })
 }
 
 // ── User goals ─────────────────────────────────────────────────────────────────
