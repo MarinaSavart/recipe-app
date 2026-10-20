@@ -84,7 +84,10 @@ async def import_from_url(
     if payload.category is not None:
         recipe_data.category = payload.category
 
-    # Step 3: save
+    # Step 3: store the thumbnail locally (CDN URLs are signed and expire)
+    thumbnail_url = await storage_service.save_remote_thumbnail(extracted.thumbnail_url)
+
+    # Step 4: save
     recipe = await recipe_service.save_recipe(
         recipe_data,
         db,
@@ -92,7 +95,7 @@ async def import_from_url(
         source_url=extracted.source_url,
         source_platform=extracted.platform,
         source_author=extracted.author,
-        thumbnail_url=extracted.thumbnail_url,
+        thumbnail_url=thumbnail_url,
     )
 
     saved_recipe = await recipe_service.get_or_404(recipe.id, db)

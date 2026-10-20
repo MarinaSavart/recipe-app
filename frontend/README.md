@@ -117,12 +117,9 @@ frontend/
 # Terminal 1 — Backend
 cd backend
 venv\Scripts\activate       # Windows
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --port 8742
 
-# Terminal 2 — Ollama
-ollama run mistral
-
-# Terminal 3 — Frontend
+# Terminal 2 — Frontend
 cd frontend
 npm run dev
 ```

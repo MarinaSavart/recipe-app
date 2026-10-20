@@ -1,6 +1,6 @@
 # 🍽️ Mise en Bouche — Backend
 
-API REST construite avec **FastAPI** + **PostgreSQL** + **Ollama** pour extraire et structurer des recettes depuis des vidéos Instagram et TikTok.
+API REST construite avec **FastAPI** + **PostgreSQL** + **OpenRouter** pour extraire et structurer des recettes depuis des vidéos Instagram et TikTok.
 
 ---
 
@@ -10,7 +10,7 @@ API REST construite avec **FastAPI** + **PostgreSQL** + **Ollama** pour extraire
 - **PostgreSQL** — base de données
 - **SQLAlchemy 2.0** — ORM async
 - **yt-dlp** — extraction de métadonnées Instagram / TikTok
-- **Ollama (Mistral)** — parsing de la description en JSON structuré
+- **OpenRouter** (Nemotron 3 Super) — parsing de la description en JSON structuré
 - **Docker** — pour lancer PostgreSQL
 
 ---
@@ -19,16 +19,7 @@ API REST construite avec **FastAPI** + **PostgreSQL** + **Ollama** pour extraire
 
 - Python 3.12+
 - Docker Desktop (lancé)
-- Ollama installé avec le modèle Mistral
-
-### Installer Ollama + Mistral
-
-1. Télécharge Ollama sur [ollama.com/download](https://ollama.com/download)
-2. Lance le modèle Mistral :
-
-```bash
-ollama pull mistral
-```
+- Une clé API OpenRouter — à créer sur [openrouter.ai/keys](https://openrouter.ai/keys)
 
 ---
 
@@ -68,6 +59,8 @@ cp .env.example .env
 
 ```env
 DATABASE_URL=postgresql+asyncpg://postgres:password@localhost:5432/recipes
+OPENROUTER_API_KEY=       # obligatoire, pour le parsing des recettes
+OPENROUTER_MODEL=nvidia/nemotron-3-super-120b-a12b:free
 ANTHROPIC_API_KEY=        # optionnel, uniquement si tu utilises l'API Claude
 ```
 
@@ -80,7 +73,7 @@ docker-compose up -d
 ### 6. Lance le serveur
 
 ```bash
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --port 8742
 ```
 
 L'API est disponible sur [http://localhost:8000](http://localhost:8000)
@@ -131,7 +124,7 @@ backend/
 │   │   └── recipe.py        # Schemas Pydantic
 │   ├── services/
 │   │   ├── extractor.py     # Extraction yt-dlp
-│   │   └── claude.py        # Parsing Ollama / Claude
+│   │   └── claude.py        # Parsing OpenRouter
 │   └── routers/
 │       └── recipes.py       # Endpoints
 ├── uploads/                 # Photos uploadées
