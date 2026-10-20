@@ -237,6 +237,33 @@
 }
 
 // ── Ingrédients ────────────────────────────────────────────────────────────────
+// Ingredients grouped by their recipe sub-section (notes), titled like the shopping list's sections
+.ingredient-group {
+  margin-bottom: $spacing-lg;
+
+  &:last-child { margin-bottom: 0; }
+
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: $muted;
+    margin-bottom: $spacing-xs;
+  }
+
+  &__count {
+    background: $surface;
+    border-radius: $radius-full;
+    padding: 0 6px;
+    font-size: 10px;
+    letter-spacing: 0;
+  }
+}
+
 .ingredient-row {
   display: flex;
   justify-content: space-between;

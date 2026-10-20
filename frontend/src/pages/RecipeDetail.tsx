@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import MacroBox from '../components/MacroBox'
 import { getRecipe, deleteRecipe, likeRecipe, unlikeRecipe } from '../services/api'
 import type { Recipe } from '../types/recipe'
-import { formatQty, resolveMediaUrl } from '../utils/recipeDisplay'
+import { formatQty, groupIngredientsBySection, resolveMediaUrl } from '../utils/recipeDisplay'
 import { getPlatformLabel } from '../utils/platforms'
 
 /** Full recipe view: details, macros, portions selector, ingredients, steps, and actions. */
@@ -196,19 +196,24 @@ export default function RecipeDetail() {
       {recipe.ingredients.length > 0 && (
         <div className="detail__section">
           <div className="detail__section-title">Ingrédients</div>
-          {recipe.ingredients.map((ing) => (
-            <div key={ing.id} className="ingredient-row">
-              <span className="ingredient-row__name">
-                {ing.name}
-                {ing.notes && (
-                  <span className="ingredient-row__notes"> — {ing.notes}</span>
-                )}
-              </span>
-              {(ing.quantity || ing.unit) && (
-                <span className="ingredient-row__qty">
-                  {[formatQty(ing.quantity, portions, recipe.servings ?? 1), ing.unit].filter(Boolean).join(' ')}
-                </span>
+          {groupIngredientsBySection(recipe.ingredients).map((section) => (
+            <div key={section.key} className="ingredient-group">
+              {section.title && (
+                <h3 className="ingredient-group__title">
+                  {section.title}
+                  <span className="ingredient-group__count">{section.ingredients.length}</span>
+                </h3>
               )}
+              {section.ingredients.map((ing) => (
+                <div key={ing.id} className="ingredient-row">
+                  <span className="ingredient-row__name">{ing.name}</span>
+                  {(ing.quantity || ing.unit) && (
+                    <span className="ingredient-row__qty">
+                      {[formatQty(ing.quantity, portions, recipe.servings ?? 1), ing.unit].filter(Boolean).join(' ')}
+                    </span>
+                  )}
+                </div>
+              ))}
             </div>
           ))}
         </div>
