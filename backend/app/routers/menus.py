@@ -9,9 +9,11 @@ from app.dependencies import get_current_user
 from app.models.user import User
 from app.schemas.menu import (
     MenuGenerateRequest,
+    MenuGuestOut,
     MenuItemCreate,
     MenuListItem,
     MenuOut,
+    MenuShareLinkOut,
     MenuUpdate,
     ShoppingListItem,
 )
@@ -31,7 +33,7 @@ async def list_menus(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """The current user's menus, most recent first."""
+    """The current user's menus and the ones shared with them, most recent first."""
     return await menu_service.list_menus(current_user.id, db)
 
 
@@ -75,8 +77,8 @@ async def get_menu(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """A full menu with its items and recipes (owner only)."""
-    menu = await menu_service.get_owned_or_404(menu_id, current_user, db)
+    """A full menu with its items and recipes (owner or guest)."""
+    menu = await menu_service.get_accessible_or_404(menu_id, current_user, db)
     return await menu_service.get_full(menu.id, current_user, db)
 
 
@@ -87,10 +89,10 @@ async def get_shopping_list(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Shopping list of a menu (owner only): ingredients scaled to the portions
+    Shopping list of a menu (owner or guest): ingredients scaled to the portions
     used in the menu, merged by name and unit, sorted alphabetically.
     """
-    menu = await menu_service.get_owned_or_404(menu_id, current_user, db)
+    menu = await menu_service.get_accessible_or_404(menu_id, current_user, db)
     items = await menu_service.get_items_with_ingredients(menu.id, db)
     return shopping_list_service.build_shopping_list(items)
 
@@ -102,8 +104,8 @@ async def rename_menu(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Renames a menu (owner only)."""
-    menu = await menu_service.get_owned_or_404(menu_id, current_user, db)
+    """Renames a menu (owner or guest)."""
+    menu = await menu_service.get_accessible_or_404(menu_id, current_user, db)
     await menu_service.rename(menu, payload.name, db)
     return await menu_service.get_full(menu.id, current_user, db)
 
@@ -114,7 +116,7 @@ async def delete_menu(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Deletes a menu (owner only); its items are deleted via cascade."""
+    """Deletes a menu (owner only); its items and shares are deleted via cascade."""
     menu = await menu_service.get_owned_or_404(menu_id, current_user, db)
     await db.delete(menu)
 
@@ -126,8 +128,8 @@ async def add_menu_item(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Adds a recipe to a menu (owner only)."""
-    menu = await menu_service.get_owned_or_404(menu_id, current_user, db)
+    """Adds a recipe to a menu (owner or guest)."""
+    menu = await menu_service.get_accessible_or_404(menu_id, current_user, db)
     await menu_service.add_item(menu, payload, db)
     return await menu_service.get_full(menu.id, current_user, db)
 
@@ -140,8 +142,8 @@ async def update_menu_item(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Replaces a recipe of a menu (owner only)."""
-    menu = await menu_service.get_owned_or_404(menu_id, current_user, db)
+    """Replaces a recipe of a menu (owner or guest)."""
+    menu = await menu_service.get_accessible_or_404(menu_id, current_user, db)
     await menu_service.update_item(menu, item_id, payload, db)
     return await menu_service.get_full(menu.id, current_user, db)
 
@@ -153,6 +155,56 @@ async def delete_menu_item(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Removes a recipe from a menu (owner only)."""
-    menu = await menu_service.get_owned_or_404(menu_id, current_user, db)
+    """Removes a recipe from a menu (owner or guest)."""
+    menu = await menu_service.get_accessible_or_404(menu_id, current_user, db)
     await menu_service.delete_item(menu, item_id, db)
+
+
+# ── Sharing ────────────────────────────────────────────────────────────────────
+
+@router.post("/{menu_id}/share-link", response_model=MenuShareLinkOut)
+async def get_share_link(
+    menu_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """The menu's invitation token, created on first call (owner only)."""
+    menu = await menu_service.get_owned_or_404(menu_id, current_user, db)
+    return {"token": await menu_service.get_share_token(menu, db)}
+
+
+@router.post("/join/{token}", response_model=MenuOut)
+async def join_menu(
+    token: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Joins a menu through its invitation link: it then shows up in the user's menus."""
+    menu = await menu_service.join(token, current_user, db)
+    return await menu_service.get_full(menu.id, current_user, db)
+
+
+@router.get("/{menu_id}/shares", response_model=list[MenuGuestOut])
+async def list_menu_guests(
+    menu_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """The users the menu is shared with (owner only)."""
+    menu = await menu_service.get_owned_or_404(menu_id, current_user, db)
+    return await menu_service.list_guests(menu, db)
+
+
+@router.delete("/{menu_id}/shares/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_menu_guest(
+    menu_id: int,
+    user_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Stops sharing a menu: the owner removes a guest, or a guest leaves the menu
+    (user_id = their own id). The menu then disappears from the guest's menus.
+    """
+    menu = await menu_service.get_accessible_or_404(menu_id, current_user, db)
+    await menu_service.remove_guest(menu, user_id, current_user, db)

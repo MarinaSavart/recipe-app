@@ -1,9 +1,12 @@
+import secrets
+
 from fastapi import HTTPException, status
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models.menu import Menu, MenuItem
+from app.models.menu import Menu, MenuItem, MenuShare
 from app.models.recipe import Recipe
 from app.models.user import User
 from app.schemas.menu import MenuItemCreate
@@ -13,56 +16,165 @@ from app.services import recipe as recipe_service
 MAX_RECIPES_FOR_GENERATION = 60
 # Generated menus are made of main-meal recipes (extras of any category can be added by hand)
 MENU_CATEGORY = "repas"
+# Invitation links are bearer secrets: 32 random bytes → 43 URL-safe characters
+SHARE_TOKEN_BYTES = 32
+
+
+def _guests_count():
+    """Correlated subquery: number of guests a menu is shared with."""
+    return (
+        select(func.count())
+        .select_from(MenuShare)
+        .where(MenuShare.menu_id == Menu.id)
+        .correlate(Menu)
+        .scalar_subquery()
+    )
 
 
 async def list_menus(user_id: int, db: AsyncSession) -> list[dict]:
-    """The user's menus with their recipe count, most recent first."""
+    """The user's own menus and the ones shared with them, with their recipe count, most recent first."""
     recipes_count = (
         select(func.count(MenuItem.id))
         .where(MenuItem.menu_id == Menu.id)
         .correlate(Menu)
         .scalar_subquery()
     )
+    shared_with_user = select(MenuShare.menu_id).where(MenuShare.user_id == user_id)
     result = await db.execute(
-        select(Menu.id, Menu.name, Menu.meals_count, Menu.created_at, recipes_count.label("recipes_count"))
-        .where(Menu.user_id == user_id)
+        select(
+            Menu.id,
+            Menu.name,
+            Menu.meals_count,
+            Menu.created_at,
+            recipes_count.label("recipes_count"),
+            (Menu.user_id == user_id).label("is_owner"),
+            func.coalesce(User.name, User.email).label("owner_name"),
+            _guests_count().label("guests_count"),
+        )
+        .join(User, User.id == Menu.user_id)
+        .where(or_(Menu.user_id == user_id, Menu.id.in_(shared_with_user)))
         .order_by(Menu.created_at.desc())
     )
     return [dict(row._mapping) for row in result.all()]
 
 
-async def get_owned_or_404(menu_id: int, user: User, db: AsyncSession) -> Menu:
-    """
-    Fetches a menu (without its items). Raises a 404 if it doesn't exist,
-    a 403 if it belongs to another user.
-    """
+async def _get_or_404(menu_id: int, db: AsyncSession) -> Menu:
     menu = await db.get(Menu, menu_id)
     if not menu:
         raise HTTPException(status_code=404, detail="Menu introuvable")
+    return menu
+
+
+def _forbidden() -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Tu n'es pas autorisé à accéder à ce menu",
+    )
+
+
+async def is_guest(menu: Menu, user_id: int, db: AsyncSession) -> bool:
+    return await db.get(MenuShare, (menu.id, user_id)) is not None
+
+
+async def get_owned_or_404(menu_id: int, user: User, db: AsyncSession) -> Menu:
+    """
+    Fetches a menu (without its items) for an owner-only action (delete, sharing).
+    Raises a 404 if it doesn't exist, a 403 if it belongs to another user.
+    """
+    menu = await _get_or_404(menu_id, db)
     if menu.user_id != user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Tu n'es pas autorisé à accéder à ce menu",
-        )
+        raise _forbidden()
+    return menu
+
+
+async def get_accessible_or_404(menu_id: int, user: User, db: AsyncSession) -> Menu:
+    """
+    Fetches a menu (without its items) that the user owns or that is shared with them:
+    guests can view and edit it. Raises a 404 if it doesn't exist, a 403 otherwise.
+    """
+    menu = await _get_or_404(menu_id, db)
+    if menu.user_id != user.id and not await is_guest(menu, user.id, db):
+        raise _forbidden()
     return menu
 
 
 async def get_full(menu_id: int, user: User, db: AsyncSession) -> Menu:
     """
     Loads a menu with its items and their recipes (fresh from the DB),
-    with like metadata attached so recipes serialize as RecipeListItem.
+    with like metadata attached so recipes serialize as RecipeListItem,
+    and the sharing info (is_owner, owner_name, guests_count) for MenuOut.
     """
     result = await db.execute(
-        select(Menu)
+        select(Menu, func.coalesce(User.name, User.email), _guests_count())
+        .join(User, User.id == Menu.user_id)
         .options(selectinload(Menu.items).selectinload(MenuItem.recipe))
         .where(Menu.id == menu_id)
         .execution_options(populate_existing=True)
     )
-    menu = result.scalar_one()
+    menu, owner_name, guests_count = result.one()
+    menu.is_owner = menu.user_id == user.id
+    menu.owner_name = owner_name
+    menu.guests_count = guests_count
 
     recipes = list({item.recipe.id: item.recipe for item in menu.items if item.recipe}.values())
     await recipe_service.attach_like_metadata(recipes, db, user)
     return menu
+
+
+# ── Sharing ────────────────────────────────────────────────────────────────────
+
+async def get_share_token(menu: Menu, db: AsyncSession) -> str:
+    """The menu's invitation token, created on first share."""
+    if not menu.share_token:
+        menu.share_token = secrets.token_urlsafe(SHARE_TOKEN_BYTES)
+        await db.flush()
+    return menu.share_token
+
+
+async def join(token: str, user: User, db: AsyncSession) -> Menu:
+    """
+    Adds the user as a guest of the menu behind an invitation token (no-op for
+    the owner or an existing guest). Raises a 404 if the link is invalid or revoked.
+    """
+    menu = await db.scalar(select(Menu).where(Menu.share_token == token))
+    if not menu:
+        raise HTTPException(status_code=404, detail="Ce lien de partage n'est plus valide")
+    if menu.user_id != user.id:
+        # ON CONFLICT: opening the link twice (or two tabs at once) doesn't fail
+        await db.execute(
+            pg_insert(MenuShare)
+            .values(menu_id=menu.id, user_id=user.id)
+            .on_conflict_do_nothing()
+        )
+    return menu
+
+
+async def list_guests(menu: Menu, db: AsyncSession) -> list[User]:
+    """The users the menu is shared with, in joining order."""
+    result = await db.execute(
+        select(User)
+        .join(MenuShare, MenuShare.user_id == User.id)
+        .where(MenuShare.menu_id == menu.id)
+        .order_by(MenuShare.created_at)
+    )
+    return list(result.scalars().all())
+
+
+async def remove_guest(menu: Menu, user_id: int, current_user: User, db: AsyncSession) -> None:
+    """
+    Stops sharing the menu with a guest, from either side: the owner removes a guest,
+    or a guest leaves the menu. When the owner removes someone, the invitation link
+    is revoked too, so the old link can't be used to join again.
+    """
+    if current_user.id not in (menu.user_id, user_id):
+        raise _forbidden()
+    share = await db.get(MenuShare, (menu.id, user_id))
+    if not share:
+        raise HTTPException(status_code=404, detail="Ce menu n'est pas partagé avec cet utilisateur")
+    await db.delete(share)
+    if current_user.id == menu.user_id:
+        menu.share_token = None
+    await db.flush()
 
 
 async def get_items_with_ingredients(menu_id: int, db: AsyncSession) -> list[MenuItem]:

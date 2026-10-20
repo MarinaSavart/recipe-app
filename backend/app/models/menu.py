@@ -14,6 +14,8 @@ class Menu(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     meals_count: Mapped[int] = mapped_column(Integer, nullable=False)  # number of meals asked for
+    # Secret of the invitation link (/menus/join/<token>), null until the owner shares the menu
+    share_token: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
 
@@ -39,3 +41,13 @@ class MenuItem(Base):
 
     menu: Mapped["Menu"] = relationship("Menu", back_populates="items")
     recipe: Mapped["Recipe | None"] = relationship("Recipe")
+
+
+class MenuShare(Base):
+    """A guest who joined a menu through its invitation link: can do everything but delete it."""
+    __tablename__ = "menu_shares"
+
+    # CASCADE: deleting the menu (or the guest's account) removes the share
+    menu_id: Mapped[int] = mapped_column(ForeignKey("menus.id", ondelete="CASCADE"), primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

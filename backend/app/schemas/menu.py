@@ -24,6 +24,10 @@ class MenuOut(BaseModel):
     created_at: datetime
     updated_at: datetime
     items: list[MenuItemOut]
+    # Sharing (attached by the service): is the current user the owner, and how many guests joined
+    is_owner: bool
+    owner_name: str
+    guests_count: int
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -33,13 +37,28 @@ class MenuListItem(BaseModel):
     meals_count: int
     recipes_count: int
     created_at: datetime
+    is_owner: bool
+    owner_name: str
+    guests_count: int
     model_config = ConfigDict(from_attributes=True)
+
+
+class MenuGuestOut(BaseModel):
+    """A user the menu is shared with (shown to the owner)."""
+    id: int
+    name: str | None
+    email: str
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MenuShareLinkOut(BaseModel):
+    token: str  # the frontend builds the invitation URL /menus/join/<token>
 
 
 # ── Input ──────────────────────────────────────────────────────────────────────
 
 class MenuGenerateRequest(BaseModel):
-    # automatic generation by Ollama
+    # automatic generation by the LLM
     name: str = Field(min_length=1, max_length=255)
     meals_count: int = Field(ge=1, le=MAX_MEALS_PER_MENU)
 
