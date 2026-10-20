@@ -398,6 +398,56 @@
   &--success { border-color: $amber-dim; color: $amber; }
 }
 
+// ── Popup de confirmation ──────────────────────────────────────────────────────
+.confirm-dialog {
+  // Native <dialog>: centered by the browser; the panel fills it so backdrop clicks hit the dialog only
+  padding: 0;
+  border: 1px solid $border;
+  border-radius: $radius-xl;
+  background: $surface;
+  color: $text;
+  width: min(420px, calc(100vw - #{$spacing-xl}));
+  margin: auto;
+  animation: slideUp 0.2s ease;
+
+  &::backdrop {
+    background: rgba(0, 0, 0, 0.7);
+  }
+
+  &__panel { padding: $spacing-lg; }
+
+  &__title {
+    font-family: $font-display;
+    font-size: 20px;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+
+  &__message {
+    font-size: 14px;
+    color: $muted;
+    line-height: 1.5;
+    margin-top: $spacing-sm;
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: $spacing-sm;
+    margin-top: $spacing-lg;
+  }
+
+  &__confirm {
+    padding: 10px $spacing-md;
+    font-size: 13px;
+
+    &--danger {
+      background: $danger;
+      color: #fff;
+    }
+  }
+}
+
 // ── Spinner ────────────────────────────────────────────────────────────────────
 .spinner {
   display: inline-block;
