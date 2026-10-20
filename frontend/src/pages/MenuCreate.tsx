@@ -47,7 +47,7 @@ export default function MenuCreate() {
       <div className="page-header">
         <h1 className="page-header__title">Créer un <em>menu</em></h1>
         <p className="page-header__sub">
-          Ollama choisit des recettes « repas » pour couvrir tes repas, au plus près de tes objectifs nutritionnels.
+          Construction de menus personnalisés pour la semaine, avec des recettes adaptées à tes objectifs et préférences.
         </p>
       </div>
 
@@ -92,7 +92,7 @@ export default function MenuCreate() {
         </p>
 
         <button type="submit" className="btn-primary menu-create__submit" disabled={!canSubmit}>
-          {generating ? <><span className="spinner" />Ollama compose ton menu… ⏳</> : 'Générer mon menu ⚡'}
+          {generating ? <><span className="spinner" />Composition de ton menu… ⏳</> : 'Générer mon menu ⚡'}
         </button>
 
         {generating && (
