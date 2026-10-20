@@ -1,11 +1,13 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { login as loginRequest } from '../services/api'
+import { redirectAfterAuth } from '../utils/auth'
 
 /** Login page: authenticates the user and stores the resulting session. */
 export default function Login() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { login } = useAuth()
 
   const [email, setEmail] = useState('')
@@ -13,7 +15,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  /** Submits the credentials and redirects to the home page on success. */
+  /** Submits the credentials and redirects (to the page asked before login, else home) on success. */
   async function handleLogin() {
     if (!email || !password) return
     setLoading(true)
@@ -21,7 +23,7 @@ export default function Login() {
     try {
       const data = await loginRequest(email, password)
       login(data.access_token, data.user)
-      navigate('/')
+      navigate(redirectAfterAuth(location.state), { replace: true })
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Erreur de connexion')
     } finally {
@@ -73,7 +75,7 @@ export default function Login() {
 
         <div className="auth-page__link">
           Pas encore de compte ?{' '}
-          <button onClick={() => navigate('/register')}>S'inscrire</button>
+          <button onClick={() => navigate('/register', { state: location.state })}>S'inscrire</button>
         </div>
       </div>
     </div>
