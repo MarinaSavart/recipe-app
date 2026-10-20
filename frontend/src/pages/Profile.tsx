@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { getMyRecipes, getLikedRecipes } from '../services/api'
+import { loadGoals, readStoredGoals, saveGoals } from '../services/goals'
 import { calculateTDEE, calculateMacros } from '../utils/nutritionCalc'
 import { resolveMediaUrl } from '../utils/recipeDisplay'
 import ProfileHeader from '../components/ProfileHeader'
@@ -13,6 +14,7 @@ import { DEFAULT_GOALS, DEFAULT_METRICS, type NutritionalGoals, type PersonalMet
 /** Profile page: personal metrics, nutritional goals, and a recap of the user's recipes/favorites. */
 export default function Profile() {
   const { user } = useAuth()
+  const userId = user?.id
   const navigate = useNavigate()
 
   const [recipes, setRecipes] = useState<RecipeListItem[]>([])
@@ -21,7 +23,6 @@ export default function Profile() {
   const [savedGoals, setSavedGoals] = useState(false)
 
   const metricsKey = `personal_metrics_${user?.id}`
-  const goalsKey = `nutritional_goals_${user?.id}`
 
   const [metrics, setMetrics] = useState<PersonalMetrics>(() => {
     const stored = localStorage.getItem(metricsKey)
@@ -45,31 +46,15 @@ export default function Profile() {
     }
   })
 
-  const [goals, setGoals] = useState<NutritionalGoals>(() => {
-    const stored = localStorage.getItem(goalsKey)
-    if (!stored) return DEFAULT_GOALS
-
-    try {
-      const parsed = JSON.parse(stored)
-
-      // Migration: old format → new format
-      return {
-        goal: parsed.goal ?? parsed.regime ?? 'maintenance',
-        mealsPerDay: parsed.mealsPerDay ?? parsed.meals_per_day ?? 3,
-        calories: parsed.calories ?? 2000,
-        proteinsG: parsed.proteinsG ?? parsed.proteins_g ?? 150,
-        carbsG: parsed.carbsG ?? parsed.carbs_g ?? 220,
-        fatsG: parsed.fatsG ?? parsed.fats_g ?? 65,
-      }
-    } catch {
-      return DEFAULT_GOALS
-    }
-  })
+  const [goals, setGoals] = useState<NutritionalGoals>(() =>
+    (user && readStoredGoals(user.id)) ?? DEFAULT_GOALS
+  )
 
   useEffect(() => {
     getMyRecipes().then(setRecipes).catch(console.error)
     getLikedRecipes().then(setLikedRecipes).catch(console.error)
-  }, [])
+    if (userId) loadGoals(userId).then(setGoals).catch(console.error)
+  }, [userId])
 
   const tdee = calculateTDEE(metrics)
 
@@ -116,11 +101,15 @@ export default function Profile() {
     setTimeout(() => setSavedMetrics(false), 2000)
   }
 
-  /** Persists the goals to localStorage and briefly shows a saved confirmation. */
+  /** Persists the goals to localStorage and the backend, then briefly shows a saved confirmation. */
   function handleSaveGoals() {
-    localStorage.setItem(goalsKey, JSON.stringify(goals))
-    setSavedGoals(true)
-    setTimeout(() => setSavedGoals(false), 2000)
+    if (!user) return
+    saveGoals(user.id, goals)
+      .then(() => {
+        setSavedGoals(true)
+        setTimeout(() => setSavedGoals(false), 2000)
+      })
+      .catch(console.error)
   }
   
   return (

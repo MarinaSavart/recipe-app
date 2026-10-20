@@ -1,7 +1,9 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel, HttpUrl, field_validator
+
+from app.schemas.ciqual import CiqualFoodOut
 
 
 # ── Import ─────────────────────────────────────────────────────────────────────
@@ -27,10 +29,13 @@ class IngredientBase(BaseModel):
     position: int = 0
 
 class IngredientCreate(IngredientBase):
-    pass  # identical to Base for now, but kept separate to evolve independently
+    # Ciqual food chosen by the user in the edit form; when sent, it's authoritative
+    # (null = unlinked). When omitted, the existing link is kept.
+    ciqual_code: Optional[int] = None
 
 class IngredientOut(IngredientBase):
     id: int
+    ciqual_food: Optional[CiqualFoodOut] = None  # linked Ciqual food, if any
     model_config = {"from_attributes": True}  # allows reading from a SQLAlchemy object
 
 
@@ -49,15 +54,11 @@ class StepOut(StepBase):
     model_config = {"from_attributes": True}
 
 
-# ── Tag ────────────────────────────────────────────────────────────────────────
-
-class TagOut(BaseModel):
-    id: int
-    name: str
-    model_config = {"from_attributes": True}
-
-
 # ── Recipe ─────────────────────────────────────────────────────────────────────
+
+def normalize_title(title: str) -> str:
+    """First letter uppercase, the rest lowercase: "PÂTES carbo" → "Pâtes carbo"."""
+    return title.strip().capitalize()
 
 class RecipeBase(BaseModel):
     title: str
@@ -79,15 +80,18 @@ class RecipeCreate(RecipeBase):
     # used internally to create a recipe (after Claude parsing)
     ingredients: list[IngredientCreate] = []
     steps: list[StepCreate] = []
-    tags: list[str] = []
     raw_description: Optional[str] = None
+
+    @field_validator("title")
+    @classmethod
+    def _normalize_title(cls, title: str) -> str:
+        return normalize_title(title)
 
 class RecipeOut(RecipeBase):
     # what the API returns — includes relationships and timestamps
     id: int
     ingredients: list[IngredientOut] = []
     steps: list[StepOut] = []
-    tags: list[TagOut] = []
     is_liked: bool
     likes_count: int
     created_at: datetime
@@ -126,4 +130,8 @@ class RecipeUpdate(BaseModel):
     fats_g: Optional[float] = None
     ingredients: Optional[list[IngredientCreate]] = None
     steps: Optional[list[StepCreate]] = None
-    tags: Optional[list[str]] = None
+
+    @field_validator("title")
+    @classmethod
+    def _normalize_title(cls, title: str | None) -> str | None:
+        return normalize_title(title) if title is not None else None

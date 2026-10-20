@@ -34,8 +34,7 @@ Structure JSON obligatoire :
   "steps": [
     { "position": 0, "content": "Texte complet de l étape.", "duration_minutes": 10 },
     { "position": 1, "content": "Texte complet de l étape suivante.", "duration_minutes": null }
-  ],
-  "tags": ["tag1", "tag2", "tag3"]
+  ]
 }
 
 RÈGLES CATÉGORIE :
@@ -59,9 +58,8 @@ RÈGLES ÉTAPES :
 - duration_minutes uniquement si un temps est explicitement mentionné
 
 RÈGLES GÉNÉRALES :
-- Traduis tout en français (ingrédients, étapes, titre, tags)
+- Traduis tout en français (ingrédients, étapes, titre)
 - Si une info est absente : null
-- tags : 3 à 6 mots-clés pertinents
 """.strip()
 
 
@@ -94,6 +92,9 @@ async def parse_recipe(raw_description: str, suggested_title: str | None = None)
                 ],
                 "response_format": {"type": "json_object"},  # forces valid JSON
                 "temperature": 0.1,  # structured parsing → low temperature
+                # Reasoning models think for minutes before answering (and may then
+                # emit broken JSON); parsing doesn't need it
+                "reasoning": {"enabled": False},
             },
         )
         response.raise_for_status()
@@ -127,6 +128,5 @@ async def parse_recipe(raw_description: str, suggested_title: str | None = None)
         fats_g=data.get("fats_g"),
         ingredients=ingredients,
         steps=steps,
-        tags=data.get("tags", []),
         raw_description=raw_description,
     )

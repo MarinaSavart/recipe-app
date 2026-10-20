@@ -1,11 +1,13 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { register as registerRequest } from '../services/api'
+import { redirectAfterAuth } from '../utils/auth'
 
 /** Registration page: creates a new account and logs the user in on success. */
 export default function Register() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { login } = useAuth()
 
   const [name, setName] = useState('')
@@ -31,7 +33,7 @@ export default function Register() {
     try {
       const data = await registerRequest(name, email, password)
       login(data.access_token, data.user)
-      navigate('/')
+      navigate(redirectAfterAuth(location.state), { replace: true })
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Erreur lors de l'inscription")
     } finally {
@@ -102,7 +104,7 @@ export default function Register() {
 
         <div className="auth-page__link">
           Déjà un compte ?{' '}
-          <button onClick={() => navigate('/login')}>Se connecter</button>
+          <button onClick={() => navigate('/login', { state: location.state })}>Se connecter</button>
         </div>
       </div>
     </div>

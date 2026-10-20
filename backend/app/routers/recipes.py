@@ -15,6 +15,7 @@ from app.schemas.recipe import (
     RecipeOut,
     RecipeUpdate,
 )
+from app.services import ingredient_enrichment as enrichment_service
 from app.services import recipe as recipe_service
 from app.services import storage as storage_service
 from app.services.claude import parse_recipe
@@ -46,7 +47,8 @@ async def import_from_url(
     Steps:
       1. yt-dlp extracts the description and metadata
       2. Claude parses the description into a structured recipe
-      3. We save it to the database and return the recipe
+      3. We save it to the database, enrich its ingredients (Mistral + Ciqual)
+         and return the recipe
     A category can optionally be supplied to override Claude's guess,
     for cases where it can't be reliably inferred from the video.
     """
@@ -97,6 +99,8 @@ async def import_from_url(
     )
 
     saved_recipe = await recipe_service.get_or_404(recipe.id, db)
+    # Canonical names, aisles, Ciqual links; macros recomputed from Ciqual when complete
+    await enrichment_service.enrich_recipe(saved_recipe, db, update_macros=True)
     await recipe_service.attach_like_metadata(saved_recipe, db, current_user)
     return saved_recipe
 
@@ -143,6 +147,8 @@ async def import_manual(
     )
 
     saved_recipe = await recipe_service.get_or_404(recipe.id, db)
+    # Canonical names, aisles, Ciqual links; macros recomputed from Ciqual when complete
+    await enrichment_service.enrich_recipe(saved_recipe, db, update_macros=True)
     await recipe_service.attach_like_metadata(saved_recipe, db, current_user)
     return saved_recipe
 
@@ -207,7 +213,7 @@ async def get_recipe(
     db: AsyncSession = Depends(get_db),
     current_user: User | None = Depends(get_optional_user),
 ):
-    """Returns a full recipe with ingredients, steps and tags (visible to any user, logged in or not)."""
+    """Returns a full recipe with ingredients and steps (visible to any user, logged in or not)."""
     recipe = await recipe_service.get_or_404(recipe_id, db)
     await recipe_service.attach_like_metadata(recipe, db, current_user)
     return recipe
@@ -244,15 +250,22 @@ async def update_recipe(
 ):
     """
     Updates a recipe (owner only). Only the fields sent are modified (PATCH).
-    For ingredients/steps/tags: fully replaced if provided.
+    For ingredients/steps: fully replaced if provided.
     """
     if payload.category is not None and payload.category not in ALLOWED_CATEGORIES:
         raise HTTPException(status_code=422, detail="Catégorie invalide")
 
     recipe = await recipe_service.get_or_404(recipe_id, db)
     recipe_service.ensure_owner(recipe, current_user)
+    # New ingredients make the macros stale: recompute them, unless the user edited them too
+    recompute_macros = (
+        recipe_service.ingredients_changed(recipe, payload)
+        and not recipe_service.macros_changed(recipe, payload)
+    )
     recipe = await recipe_service.apply_update(recipe, payload, db)
     updated_recipe = await recipe_service.get_or_404(recipe.id, db)
+    # Only new or changed ingredients are enriched
+    await enrichment_service.enrich_recipe(updated_recipe, db, update_macros=recompute_macros)
     await recipe_service.attach_like_metadata(updated_recipe, db, current_user)
     return updated_recipe
 
@@ -265,7 +278,7 @@ async def delete_recipe(
 ):
     """
     Deletes a recipe (owner only) and everything linked to it
-    (ingredients/steps/tags are automatically deleted via cascade).
+    (ingredients/steps are automatically deleted via cascade).
     """
     recipe = await recipe_service.get_or_404(recipe_id, db)
     recipe_service.ensure_owner(recipe, current_user)
