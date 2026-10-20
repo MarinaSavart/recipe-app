@@ -55,9 +55,20 @@ function AppLayout() {
 
   return (
     <>
-      <button className="mobile-menu-btn" onClick={() => setMobileOpen(o => !o)}>
-        {mobileOpen ? '✕' : '☰'}
-      </button>
+      {/* Mobile only: fixed top bar, so the menu button never covers the page content */}
+      <header className="mobile-header">
+        <button
+          className="mobile-header__burger"
+          onClick={() => setMobileOpen(o => !o)}
+          aria-label={mobileOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+          aria-expanded={mobileOpen}
+        >
+          {mobileOpen ? '✕' : '☰'}
+        </button>
+        <span className="mobile-header__logo">
+          🍽️ Mise en <span>Bouche</span>
+        </span>
+      </header>
 
       {mobileOpen && (
         <div
@@ -73,6 +84,7 @@ function AppLayout() {
           collapsed={collapsed}
           onToggle={handleToggle}
           mobileOpen={mobileOpen}
+          onNavigate={() => setMobileOpen(false)}
           theme={theme}
           onThemeToggle={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
         />
