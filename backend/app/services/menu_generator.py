@@ -155,7 +155,8 @@ async def generate_menu(
     """
     Asks the OpenRouter model to pick recipes for `request.meals_count` meals.
     Returns the menu items: [{"recipe_id": 3, "portions": 3, "position": 0}, ...]
-    Raises ValueError if the model's answer is unusable.
+    If the model's answer is unusable, recipes are picked by closeness to the per-meal calories.
+    Raises ValueError if there's no recipe to pick from.
     """
     if not available_recipes:
         raise ValueError("Aucune recette de catégorie « repas » pour composer un menu.")
@@ -176,6 +177,9 @@ async def generate_menu(
                 "model": settings.OPENROUTER_MODEL,
                 "messages": [{"role": "user", "content": prompt}],
                 "response_format": {"type": "json_object"},  # forces a JSON object
+                # Reasoning models think for minutes on this prompt (and may then emit
+                # broken JSON); without reasoning the answer comes in a few seconds
+                "reasoning": {"enabled": False},
             },
         )
         response.raise_for_status()
@@ -189,13 +193,15 @@ async def generate_menu(
             raw = raw[4:]
         raw = raw.strip()
 
+    # An unusable answer isn't fatal: the menu is then filled deterministically below
     try:
-        data = json.loads(raw)
-    except json.JSONDecodeError as exc:
-        raise ValueError("Le modèle n'a pas retourné un JSON valide.") from exc
+        raw_items = _extract_items(json.loads(raw))
+    except (json.JSONDecodeError, ValueError):
+        logger.warning("Unusable model answer for menu generation, falling back to calorie-based picking")
+        raw_items = []
 
     recipes_by_id = {recipe["id"]: recipe for recipe in available_recipes}
-    choices = _sanitize_choices(_extract_items(data), recipes_by_id)
+    choices = _sanitize_choices(raw_items, recipes_by_id)
     choices = _fit_to_meals_count(
         choices, recipes_by_id, request.meals_count, meal_targets.get("calories", 0)
     )
