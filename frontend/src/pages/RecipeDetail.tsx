@@ -79,7 +79,7 @@ export default function RecipeDetail() {
   if (!recipe) return null
 
   const totalTime = (recipe.prep_time_minutes ?? 0) + (recipe.cook_time_minutes ?? 0)
-
+  
   return (
     <div className="detail">
 
@@ -142,10 +142,10 @@ export default function RecipeDetail() {
         <div className="detail__section">
           <div className="detail__section-title">Macros par portion</div>
           <div className="detail__macros">
-            {recipe.calories && <MacroBox value={recipe.calories} label="kcal" />}
-            {recipe.proteins_g && <MacroBox value={recipe.proteins_g} label="Prot." unit="g" />}
-            {recipe.carbs_g && <MacroBox value={recipe.carbs_g} label="Gluc." unit="g" />}
-            {recipe.fats_g && <MacroBox value={recipe.fats_g} label="Lip." unit="g" />}
+            {recipe.calories && <MacroBox value={Math.ceil(recipe.calories)} label="kcal" />}
+            {recipe.proteins_g && <MacroBox value={Math.ceil(recipe.proteins_g)} label="Prot." unit="g" />}
+            {recipe.carbs_g && <MacroBox value={Math.ceil(recipe.carbs_g)} label="Gluc." unit="g" />}
+            {recipe.fats_g && <MacroBox value={Math.ceil(recipe.fats_g)} label="Lip." unit="g" />}
           </div>
         </div>
       )}
@@ -229,18 +229,6 @@ export default function RecipeDetail() {
               </div>
             </div>
           ))}
-        </div>
-      )}
-
-      {/* Tags */}
-      {recipe.tags.length > 0 && (
-        <div className="detail__section">
-          <div className="detail__section-title">Tags</div>
-          <div className="tags-row">
-            {recipe.tags.map((tag) => (
-              <span key={tag.id} className="tag">{tag.name}</span>
-            ))}
-          </div>
         </div>
       )}
 

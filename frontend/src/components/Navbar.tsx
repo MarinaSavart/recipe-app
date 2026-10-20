@@ -11,6 +11,7 @@ const NAV_ITEMS: NavItem[] = [
   { icon: '📚', label: 'Recettes', path: '/' },
   { icon: '⚡', label: 'Importer',     path: '/import' },
   { icon: '❤️', label: 'Mes favoris',  path: '/favorites' },
+  { icon: '📅', label: 'Mes menus',    path: '/menus' },
   { icon: '👤', label: 'Profil',       path: '/profile' },
 ]
 

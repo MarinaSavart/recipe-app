@@ -1,7 +1,7 @@
 import { StrictMode, useState, useEffect } from 'react'
 import type { ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import Navbar from './components/Navbar'
 import RecipeList from './pages/RecipeList'
@@ -13,13 +13,21 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import './styles/main.scss'
 import Profile from './pages/Profile'
+import MenuList from './pages/MenuList'
+import MenuCreate from './pages/MenuCreate'
+import MenuDetail from './pages/MenuDetail'
+import MenuJoin from './pages/MenuJoin'
 
 type Theme = 'dark' | 'light'
 
-/** Guards routes — redirects to /login when the user isn't logged in. */
+/**
+ * Guards routes — redirects to /login when the user isn't logged in,
+ * remembering the requested page (e.g. a menu invitation link) to come back to it.
+ */
 function PrivateRoute({ children }: { children: ReactNode }) {
   const { user } = useAuth()
-  return user ? <>{children}</> : <Navigate to="/login" replace />
+  const location = useLocation()
+  return user ? <>{children}</> : <Navigate to="/login" replace state={{ from: location.pathname }} />
 }
 
 /** Main authenticated layout: navbar, mobile menu, theme toggle, and routed pages. */
@@ -76,6 +84,10 @@ function AppLayout() {
             <Route path="/import"           element={<RecipeImport />} />
             <Route path="/favorites"        element={<FavoritesRecipes onCountChange={setFavoritesCount} />} />
             <Route path="/profile"           element={<Profile />} />
+            <Route path="/menus"            element={<MenuList />} />
+            <Route path="/menus/create"     element={<MenuCreate />} />
+            <Route path="/menus/:id"        element={<MenuDetail />} />
+            <Route path="/menus/join/:token" element={<MenuJoin />} />
           </Routes>
         </main>
       </div>

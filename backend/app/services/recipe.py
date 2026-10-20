@@ -3,9 +3,11 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models.recipe import Ingredient, Recipe, RecipeLike, Step, Tag
+from app.models.ciqual import CiqualFood
+from app.models.recipe import Ingredient, Recipe, RecipeLike, Step
 from app.models.user import User
 from app.schemas.recipe import RecipeCreate, RecipeUpdate
+from app.services.ingredient_enrichment import MACRO_FIELDS, copy_enrichment
 
 
 async def get_or_404(recipe_id: int, db: AsyncSession) -> Recipe:
@@ -16,11 +18,13 @@ async def get_or_404(recipe_id: int, db: AsyncSession) -> Recipe:
     result = await db.execute(
         select(Recipe)
         .options(
-            selectinload(Recipe.ingredients),
+            selectinload(Recipe.ingredients).selectinload(Ingredient.ciqual_food),
             selectinload(Recipe.steps),
-            selectinload(Recipe.tags),
         )
         .where(Recipe.id == recipe_id)
+        # Reload collections already in the session: after apply_update() they still
+        # hold the deleted ingredients/steps otherwise
+        .execution_options(populate_existing=True)
     )
     recipe = result.scalar_one_or_none()
     if not recipe:
@@ -133,7 +137,7 @@ async def save_recipe(
     thumbnail_url: str | None = None,
 ) -> Recipe:
     """
-    Saves a RecipeCreate to the database — recipe + ingredients + steps + tags.
+    Saves a RecipeCreate to the database — recipe + ingredients + steps.
     """
     # 1. Create the main recipe
     recipe = Recipe(
@@ -165,18 +169,45 @@ async def save_recipe(
     for step in recipe_data.steps:
         db.add(Step(recipe_id=recipe.id, **step.model_dump()))
 
-    # 4. Add the tags
-    for name in recipe_data.tags:
-        db.add(Tag(recipe_id=recipe.id, name=name))
-
     await db.flush()
     return recipe
+
+
+def ingredients_changed(recipe: Recipe, payload: RecipeUpdate) -> bool:
+    """
+    Whether the update changes what the macros depend on: an ingredient added, removed,
+    or with another quantity, unit or Ciqual link (notes and order don't count).
+    """
+    if "ingredients" not in payload.model_fields_set:
+        return False
+    current_codes = {ing.name: ing.ciqual_code for ing in recipe.ingredients}
+    before = sorted(
+        (ing.name, ing.quantity or "", ing.unit or "", ing.ciqual_code or 0) for ing in recipe.ingredients
+    )
+    after = sorted(
+        (
+            ing.name, ing.quantity or "", ing.unit or "",
+            (ing.ciqual_code if "ciqual_code" in ing.model_fields_set else current_codes.get(ing.name)) or 0,
+        )
+        for ing in payload.ingredients
+    )
+    return before != after
+
+
+def macros_changed(recipe: Recipe, payload: RecipeUpdate) -> bool:
+    """Whether the update sets at least one macro to another value than the current one."""
+    sent = payload.model_dump(include=set(MACRO_FIELDS), exclude_unset=True)
+    for field, value in sent.items():
+        current = getattr(recipe, field)
+        if (value is None) != (current is None) or (value is not None and abs(value - current) > 0.05):
+            return True
+    return False
 
 
 async def apply_update(recipe: Recipe, payload: RecipeUpdate, db: AsyncSession) -> Recipe:
     """
     Applies a RecipeUpdate to an existing recipe. Only the fields sent
-    are modified (PATCH). For ingredients/steps/tags: fully replaced
+    are modified (PATCH). For ingredients/steps: fully replaced
     if provided.
     """
     update_data = payload.model_dump(exclude_unset=True)
@@ -187,12 +218,27 @@ async def apply_update(recipe: Recipe, payload: RecipeUpdate, db: AsyncSession) 
         if field in update_data:
             setattr(recipe, field, update_data[field])
 
-    # Fully replace the ingredients if provided
+    # Fully replace the ingredients if provided, keeping the enrichment of unchanged ones
     if "ingredients" in update_data:
+        chosen_codes = {ing.ciqual_code for ing in payload.ingredients if ing.ciqual_code is not None}
+        if chosen_codes:
+            known = set((await db.execute(
+                select(CiqualFood.code).where(CiqualFood.code.in_(chosen_codes))
+            )).scalars())
+            if chosen_codes - known:
+                raise HTTPException(status_code=422, detail="Aliment Ciqual inconnu")
+
+        previous = {(ing.name, ing.quantity, ing.unit): ing for ing in recipe.ingredients}
         for ing in recipe.ingredients:
             await db.delete(ing)
         for ing in payload.ingredients:
-            db.add(Ingredient(recipe_id=recipe.id, **ing.model_dump()))
+            new_ingredient = Ingredient(recipe_id=recipe.id, **ing.model_dump(exclude={"ciqual_code"}))
+            if unchanged := previous.get((ing.name, ing.quantity, ing.unit)):
+                copy_enrichment(unchanged, new_ingredient)
+            if "ciqual_code" in ing.model_fields_set:
+                # The user's choice in the edit form wins over any previous (automatic) link
+                new_ingredient.ciqual_code = ing.ciqual_code
+            db.add(new_ingredient)
 
     # Fully replace the steps if provided
     if "steps" in update_data:
@@ -200,13 +246,6 @@ async def apply_update(recipe: Recipe, payload: RecipeUpdate, db: AsyncSession) 
             await db.delete(step)
         for step in payload.steps:
             db.add(Step(recipe_id=recipe.id, **step.model_dump()))
-
-    # Fully replace the tags if provided
-    if "tags" in update_data:
-        for tag in recipe.tags:
-            await db.delete(tag)
-        for name in payload.tags:
-            db.add(Tag(recipe_id=recipe.id, name=name))
 
     await db.flush()
     return recipe

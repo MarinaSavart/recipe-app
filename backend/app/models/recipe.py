@@ -5,6 +5,7 @@ from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text, Uniqu
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+from app.models.ciqual import CiqualFood
 
 class Recipe(Base):
     __tablename__ = "recipes"
@@ -44,9 +45,6 @@ class Recipe(Base):
     steps: Mapped[list["Step"]] = relationship(
         "Step", back_populates="recipe", cascade="all, delete-orphan", order_by="Step.position"
     )
-    tags: Mapped[list["Tag"]] = relationship(
-        "Tag", back_populates="recipe", cascade="all, delete-orphan"
-    )
     likes: Mapped[list["RecipeLike"]] = relationship(
         "RecipeLike", back_populates="recipe", cascade="all, delete-orphan"
     )
@@ -64,7 +62,16 @@ class Ingredient(Base):
     unit: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)       # "g"
     notes: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)     # "5% fat"
 
+    # Enrichment (Mistral + Ciqual), null until the ingredient has been enriched
+    canonical_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)  # "gousses d'ail" → "ail"
+    aisle: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)            # store aisle key
+    weight_g: Mapped[Optional[float]] = mapped_column(Float, nullable=True)            # estimated weight of the quantity
+    ciqual_code: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("ciqual_foods.code", ondelete="SET NULL"), nullable=True
+    )
+
     recipe: Mapped["Recipe"] = relationship("Recipe", back_populates="ingredients")
+    ciqual_food: Mapped[Optional["CiqualFood"]] = relationship("CiqualFood")
 
 
 class Step(Base):
@@ -78,16 +85,6 @@ class Step(Base):
     duration_minutes: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
     recipe: Mapped["Recipe"] = relationship("Recipe", back_populates="steps")
-
-
-class Tag(Base):
-    __tablename__ = "tags"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    recipe_id: Mapped[int] = mapped_column(ForeignKey("recipes.id"), nullable=False)
-    name: Mapped[str] = mapped_column(String(100), nullable=False)
-
-    recipe: Mapped["Recipe"] = relationship("Recipe", back_populates="tags")
 
 
 class RecipeLike(Base):
