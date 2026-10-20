@@ -92,6 +92,9 @@ async def parse_recipe(raw_description: str, suggested_title: str | None = None)
                 ],
                 "response_format": {"type": "json_object"},  # forces valid JSON
                 "temperature": 0.1,  # structured parsing → low temperature
+                # Reasoning models think for minutes before answering (and may then
+                # emit broken JSON); parsing doesn't need it
+                "reasoning": {"enabled": False},
             },
         )
         response.raise_for_status()
