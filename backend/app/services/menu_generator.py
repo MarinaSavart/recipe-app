@@ -1,9 +1,9 @@
 """
-Generates a menu by asking Ollama/Mistral to pick recipes covering
+Generates a menu by asking the OpenRouter LLM to pick recipes covering
 a number of meals, close to the user's per-meal nutritional goals.
 
 A recipe is cooked whole: a recipe yielding N portions covers N meals
-(or 2N, 3N...). Mistral doesn't count reliably, so its answer is then
+(or 2N, 3N...). LLMs don't count reliably, so its answer is then
 fixed deterministically to cover exactly the requested number of meals.
 """
 import json
@@ -11,16 +11,13 @@ import logging
 
 import httpx
 
+from app.config import settings
 from app.schemas.menu import MenuGenerateRequest
+from app.services.claude import OPENROUTER_URL
 
 logger = logging.getLogger(__name__)
 
-OLLAMA_URL = "http://localhost:11434/api/generate"
-OLLAMA_MODEL = "mistral"
-
-OLLAMA_TIMEOUT_SECONDS = 300.0
-# Ollama's default context window is too small for the recipe list
-OLLAMA_NUM_CTX = 8192
+OPENROUTER_TIMEOUT_SECONDS = 120.0
 
 
 def _build_prompt(
@@ -57,7 +54,7 @@ RÉPONDS UNIQUEMENT avec un objet JSON valide, aucun texte avant ou après :
 
 def _extract_items(data: object) -> list[object]:
     """
-    Ollama's "format": "json" mode forces a JSON *object*, so the array usually
+    The "json_object" response format forces a JSON *object*, so the array usually
     comes wrapped (e.g. {"items": [...]}); accept a bare array too.
     """
     if isinstance(data, list):
@@ -66,7 +63,7 @@ def _extract_items(data: object) -> list[object]:
         for value in data.values():
             if isinstance(value, list):
                 return value
-    raise ValueError("Ollama n'a pas retourné un tableau JSON valide.")
+    raise ValueError("Le modèle n'a pas retourné un tableau JSON valide.")
 
 
 def _batch_size(recipe: dict) -> int:
@@ -78,7 +75,7 @@ def _sanitize_choices(raw_items: list[object], recipes_by_id: dict[int, dict]) -
     """
     Keeps known recipes, merges duplicates and rounds each recipe's portions
     to the nearest whole number of batches (at least one).
-    Returns {recipe_id: portions}, in Ollama's order.
+    Returns {recipe_id: portions}, in the model's order.
     """
     requested: dict[int, float] = {}
     for raw in raw_items:
@@ -108,7 +105,7 @@ def _fit_to_meals_count(
     """
     Builds the final choices, only by whole batches, so they cover exactly `target`
     meals (or the closest count below it if batch sizes can't add up to it).
-    Ollama's batches are kept in its order as long as the remaining meals can still
+    The model's batches are kept in its order as long as the remaining meals can still
     be completed; the rest is filled with new recipes first, closest to the
     per-meal calories.
     """
@@ -156,29 +153,34 @@ async def generate_menu(
     meal_targets: dict[str, float],    # {"calories": 600, "proteins_g": 45, ...}
 ) -> list[dict]:
     """
-    Asks Ollama to pick recipes for `request.meals_count` meals.
+    Asks the OpenRouter model to pick recipes for `request.meals_count` meals.
     Returns the menu items: [{"recipe_id": 3, "portions": 3, "position": 0}, ...]
-    Raises ValueError if Ollama's answer is unusable.
+    Raises ValueError if the model's answer is unusable.
     """
     if not available_recipes:
         raise ValueError("Aucune recette de catégorie « repas » pour composer un menu.")
 
     prompt = _build_prompt(request, available_recipes, meal_targets)
 
-    async with httpx.AsyncClient(timeout=OLLAMA_TIMEOUT_SECONDS) as client:
+    async with httpx.AsyncClient(timeout=OPENROUTER_TIMEOUT_SECONDS) as client:
         response = await client.post(
-            OLLAMA_URL,
+            OPENROUTER_URL,
+            headers={
+                "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
+                "Content-Type": "application/json",
+                # Recommended by OpenRouter to identify the app
+                "HTTP-Referer": "https://mise-en-bouche.app",
+                "X-Title": "Mise en Bouche",
+            },
             json={
-                "model": OLLAMA_MODEL,
-                "prompt": prompt,
-                "stream": False,
-                "format": "json",
-                "options": {"num_ctx": OLLAMA_NUM_CTX},
+                "model": settings.OPENROUTER_MODEL,
+                "messages": [{"role": "user", "content": prompt}],
+                "response_format": {"type": "json_object"},  # forces a JSON object
             },
         )
         response.raise_for_status()
 
-    raw = response.json()["response"].strip()
+    raw = (response.json()["choices"][0]["message"]["content"] or "").strip()
 
     # Strip backticks just in case
     if raw.startswith("```"):
@@ -190,7 +192,7 @@ async def generate_menu(
     try:
         data = json.loads(raw)
     except json.JSONDecodeError as exc:
-        raise ValueError("Ollama n'a pas retourné un JSON valide.") from exc
+        raise ValueError("Le modèle n'a pas retourné un JSON valide.") from exc
 
     recipes_by_id = {recipe["id"]: recipe for recipe in available_recipes}
     choices = _sanitize_choices(_extract_items(data), recipes_by_id)

@@ -42,11 +42,11 @@ async def generate(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Generates a menu of `meals_count` meals with Ollama.
+    Generates a menu of `meals_count` meals with the OpenRouter model.
     Steps:
       1. Load the "repas" recipes offered to the generator (all users' recipes)
       2. Load the user's per-meal nutritional targets (defaults if not defined)
-      3. Ask Ollama to pick recipes covering exactly that number of meals
+      3. Ask the model to pick recipes covering exactly that number of meals
       4. Save the menu and its items, and return it
     """
     recipes = await menu_service.get_generation_recipes(db)
@@ -57,10 +57,10 @@ async def generate(
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
     except httpx.HTTPError:
-        logger.exception("Ollama call failed during menu generation")
+        logger.exception("OpenRouter call failed during menu generation")
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="La génération du menu a échoué. Vérifie qu'Ollama tourne et réessaie.",
+            detail="La génération du menu a échoué. Réessaie dans quelques instants.",
         )
 
     menu = await menu_service.create_with_items(
