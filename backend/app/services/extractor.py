@@ -1,10 +1,13 @@
 import asyncio
 import logging
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Optional
 from urllib.parse import urlparse
 
 import yt_dlp
+
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +85,18 @@ def _extract_sync(url: str, platform: str) -> dict:
                 return ydl.extract_info(url, download=False)
         except yt_dlp.utils.YoutubeDLError as e:
             logger.debug("Failed without cookies: %s. Retrying with browser cookies.", e)
+
+    if settings.COOKIES_FILE and Path(settings.COOKIES_FILE).is_file():
+        logger.debug("Attempting with cookies file")
+        ydl_opts = {
+            "quiet": True,
+            "no_warnings": True,
+            "skip_download": True,
+            "extract_flat": False,
+            "cookiefile": settings.COOKIES_FILE,
+        }
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            return ydl.extract_info(url, download=False)
 
     last_error = None
     for browser in BROWSERS:
