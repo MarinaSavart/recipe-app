@@ -6,6 +6,7 @@ import NutritionSummary from '../components/NutritionSummary'
 import RecipePickerModal from '../components/RecipePickerModal'
 import ShoppingList from '../components/ShoppingList'
 import { useAuth } from '../context/AuthContext'
+import { useConfirm } from '../hooks/useConfirm'
 import {
   addMenuItem,
   deleteMenu,
@@ -25,9 +26,10 @@ import { DEFAULT_GOALS, type NutritionalGoals } from '../types/profil'
 import type { RecipeListItem } from '../types/recipe'
 import {
   averagePerMeal,
-  deleteMenuConfirmMessage,
+  deleteMenuConfirm,
   groupByCategory,
   guestLabel,
+  leaveMenuConfirm,
   menuInviteUrl,
   perMealTargets,
   totalMeals,
@@ -74,6 +76,7 @@ export default function MenuDetail() {
   const [toast, setToast] = useState<Toast | null>(null)
   const [shopping, setShopping] = useState<ShoppingState>({ status: 'closed' })
   const [share, setShare] = useState<ShareState>({ status: 'closed' })
+  const { confirm, dialog } = useConfirm()
   const shoppingRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
@@ -186,7 +189,7 @@ export default function MenuDetail() {
   }
 
   async function handleDeleteMenu() {
-    if (!confirm(deleteMenuConfirmMessage(menu))) return
+    if (!(await confirm(deleteMenuConfirm(menu)))) return
     const ok = await mutate(() => deleteMenu(menu.id))
     if (ok) navigate('/menus')
   }
@@ -222,7 +225,13 @@ export default function MenuDetail() {
 
   /** Owner side: stops sharing with a guest. The backend revokes the old link, so a new one is loaded. */
   async function handleRemoveGuest(guest: MenuGuest) {
-    if (!confirm(`Ne plus partager "${menu.name}" avec ${guestLabel(guest)} ? Le menu disparaîtra de ses menus.`)) return
+    const confirmed = await confirm({
+      title: `Ne plus partager avec ${guestLabel(guest)} ?`,
+      message: `"${menu.name}" disparaîtra de ses menus, et le lien d'invitation actuel ne fonctionnera plus.`,
+      confirmLabel: 'Ne plus partager',
+      danger: true,
+    })
+    if (!confirmed) return
     setBusy(true)
     try {
       await removeMenuGuest(menu.id, guest.id)
@@ -241,7 +250,7 @@ export default function MenuDetail() {
   /** Guest side: leaves the shared menu, which then disappears from their menus. */
   async function handleLeaveMenu() {
     if (!userId) return
-    if (!confirm(`Ne plus partager "${menu.name}" ? Il disparaîtra de tes menus.`)) return
+    if (!(await confirm(leaveMenuConfirm(menu)))) return
     // Not through mutate(): the open shopping list would be reloaded on a menu we no longer access
     setBusy(true)
     try {
@@ -392,6 +401,7 @@ export default function MenuDetail() {
         />
       )}
 
+      {dialog}
       {toast && <div className={`toast toast--${toast.type}`}>{toast.msg}</div>}
     </div>
   )

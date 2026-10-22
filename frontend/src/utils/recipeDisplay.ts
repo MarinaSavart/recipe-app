@@ -1,3 +1,5 @@
+import type { Ingredient } from '../types/recipe'
+
 const API_URL = import.meta.env.VITE_API_URL
 
 /**
@@ -31,4 +33,28 @@ export function formatQty(quantity: string | null, multiplier: number, servings:
     ? Math.round(result)
     : parseFloat(result.toFixed(1))
   return rounded.toString()
+}
+
+/** A sub-section of a recipe's ingredients ("poulet mexicain grillé", "sauce"…). */
+export interface IngredientSection {
+  key: string
+  title: string | null  // null for ingredients without a section
+  ingredients: Ingredient[]
+}
+
+/**
+ * Groups a recipe's ingredients by the sub-section stored in their notes at import,
+ * in the recipe's order (sections appear where their first ingredient is).
+ * Ingredients without notes form an untitled section.
+ */
+export function groupIngredientsBySection(ingredients: Ingredient[]): IngredientSection[] {
+  const sections = new Map<string, IngredientSection>()
+  for (const ingredient of [...ingredients].sort((a, b) => a.position - b.position)) {
+    const title = ingredient.notes?.trim() || null
+    const key = title?.toLowerCase() ?? ''
+    const section = sections.get(key) ?? { key, title, ingredients: [] }
+    section.ingredients.push(ingredient)
+    sections.set(key, section)
+  }
+  return [...sections.values()]
 }

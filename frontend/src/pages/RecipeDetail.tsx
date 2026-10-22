@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import MacroBox from '../components/MacroBox'
+import { useConfirm } from '../hooks/useConfirm'
 import { getRecipe, deleteRecipe, likeRecipe, unlikeRecipe } from '../services/api'
 import type { Recipe } from '../types/recipe'
-import { formatQty, resolveMediaUrl } from '../utils/recipeDisplay'
+import { formatQty, groupIngredientsBySection, resolveMediaUrl } from '../utils/recipeDisplay'
 import { getPlatformLabel } from '../utils/platforms'
 
 /** Full recipe view: details, macros, portions selector, ingredients, steps, and actions. */
@@ -13,6 +14,7 @@ export default function RecipeDetail() {
   const [recipe, setRecipe] = useState<Recipe | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const { confirm, dialog } = useConfirm()
   const [deleting, setDeleting] = useState(false)
   const [portions, setPortions] = useState<number>(1)
 
@@ -50,7 +52,13 @@ export default function RecipeDetail() {
   /** Confirms and deletes the recipe, then navigates back to the recipe list. */
   async function handleDelete() {
     if (!recipe) return
-    if (!confirm(`Supprimer "${recipe.title}" ?`)) return
+    const confirmed = await confirm({
+      title: `Supprimer "${recipe.title}" ?`,
+      message: 'Cette action est définitive.',
+      confirmLabel: 'Supprimer',
+      danger: true,
+    })
+    if (!confirmed) return
     setDeleting(true)
     try {
       await deleteRecipe(recipe.id)
@@ -196,19 +204,24 @@ export default function RecipeDetail() {
       {recipe.ingredients.length > 0 && (
         <div className="detail__section">
           <div className="detail__section-title">Ingrédients</div>
-          {recipe.ingredients.map((ing) => (
-            <div key={ing.id} className="ingredient-row">
-              <span className="ingredient-row__name">
-                {ing.name}
-                {ing.notes && (
-                  <span className="ingredient-row__notes"> — {ing.notes}</span>
-                )}
-              </span>
-              {(ing.quantity || ing.unit) && (
-                <span className="ingredient-row__qty">
-                  {[formatQty(ing.quantity, portions, recipe.servings ?? 1), ing.unit].filter(Boolean).join(' ')}
-                </span>
+          {groupIngredientsBySection(recipe.ingredients).map((section) => (
+            <div key={section.key} className="ingredient-group">
+              {section.title && (
+                <h3 className="ingredient-group__title">
+                  {section.title}
+                  <span className="ingredient-group__count">{section.ingredients.length}</span>
+                </h3>
               )}
+              {section.ingredients.map((ing) => (
+                <div key={ing.id} className="ingredient-row">
+                  <span className="ingredient-row__name">{ing.name}</span>
+                  {(ing.quantity || ing.unit) && (
+                    <span className="ingredient-row__qty">
+                      {[formatQty(ing.quantity, portions, recipe.servings ?? 1), ing.unit].filter(Boolean).join(' ')}
+                    </span>
+                  )}
+                </div>
+              ))}
             </div>
           ))}
         </div>
@@ -232,6 +245,7 @@ export default function RecipeDetail() {
         </div>
       )}
 
+      {dialog}
     </div>
   )
 }

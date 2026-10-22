@@ -283,7 +283,7 @@ export default function RecipeEdit() {
             <div className="edit-page__full">
               <div className="edit-field">
                 <label className="edit-field__label">Catégorie</label>
-                <div className="category-filters">
+                <div className="category-filters category-filters--wrap">
                   <button
                     className={`category-filters__btn ${category === null ? 'category-filters__btn--active' : ''}`}
                     onClick={() => setCategory(null)}

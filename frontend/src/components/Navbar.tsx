@@ -21,15 +21,21 @@ interface NavbarProps {
   collapsed: boolean
   onToggle: () => void
   mobileOpen: boolean
+  onNavigate: () => void  // called after following a link (closes the menu on mobile)
   theme: 'dark' | 'light'
   onThemeToggle: () => void
 }
 
 /** Sidebar navigation: main nav links, theme toggle, collapse toggle, and account section. */
-export default function Navbar({ recipeCount, favoritesCount, collapsed, onToggle, mobileOpen, theme, onThemeToggle }: NavbarProps) {
+export default function Navbar({ recipeCount, favoritesCount, collapsed, onToggle, mobileOpen, onNavigate, theme, onThemeToggle }: NavbarProps) {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, logout } = useAuth()
+
+  function goTo(path: string) {
+    navigate(path)
+    onNavigate()
+  }
 
   return (
     <>
@@ -50,7 +56,7 @@ export default function Navbar({ recipeCount, favoritesCount, collapsed, onToggl
         </div>
 
         {/* Navbar logo */}
-        <div className="navbar__logo" onClick={() => navigate('/')}>
+        <div className="navbar__logo" onClick={() => goTo('/')}>
           <span className="navbar__logo-icon">🍽️</span>
           <span className="navbar__logo-text">
             Mise en <span>Bouche</span>
@@ -63,7 +69,7 @@ export default function Navbar({ recipeCount, favoritesCount, collapsed, onToggl
             <button
               key={item.path}
               className={`navbar__btn ${location.pathname === item.path ? 'navbar__btn--active' : ''}`}
-              onClick={() => navigate(item.path)}
+              onClick={() => goTo(item.path)}
               title={collapsed ? item.label : undefined}
             >
               <span className="icon">{item.icon}</span>

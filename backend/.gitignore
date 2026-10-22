@@ -8,3 +8,5 @@ uploads/*
 
 # Ciqual XML files, downloaded by `python -m app.scripts.import_ciqual` (~70 MB)
 data/
+# Instagram/TikTok cookies for yt-dlp (production)
+cookies/
