@@ -1,5 +1,6 @@
 import type { NutritionalGoals } from '../types/profil'
 import type { RecipeListItem } from '../types/recipe'
+import type { ConfirmOptions } from '../types/dialog'
 import { MENU_CATEGORY, type MealNutrition, type MenuGuest, type MenuItem } from '../types/menu'
 import { CATEGORIES } from './categories'
 
@@ -138,9 +139,24 @@ export function guestLabel(guest: MenuGuest): string {
 }
 
 /** Confirmation asked before the owner deletes a menu, with a warning when it's shared. */
-export function deleteMenuConfirmMessage(menu: { name: string; guestsCount: number }): string {
-  const question = `Supprimer le menu "${menu.name}" ?`
-  if (menu.guestsCount === 0) return question
+export function deleteMenuConfirm(menu: { name: string; guestsCount: number }): ConfirmOptions {
   const people = menu.guestsCount > 1 ? `${menu.guestsCount} personnes` : '1 personne'
-  return `⚠️ Attention, ce menu est partagé avec ${people}. Si tu le supprimes, plus personne ne pourra le voir.\n\n${question}`
+  return {
+    title: `Supprimer le menu "${menu.name}" ?`,
+    message: menu.guestsCount > 0
+      ? `⚠️ Attention, ce menu est partagé avec ${people}. Si tu le supprimes, plus personne ne pourra le voir.`
+      : 'Cette action est définitive.',
+    confirmLabel: 'Supprimer',
+    danger: true,
+  }
+}
+
+/** Confirmation asked before a guest leaves a shared menu. */
+export function leaveMenuConfirm(menu: { name: string }): ConfirmOptions {
+  return {
+    title: `Ne plus partager "${menu.name}" ?`,
+    message: 'Il disparaîtra de tes menus.',
+    confirmLabel: 'Ne plus partager',
+    danger: true,
+  }
 }

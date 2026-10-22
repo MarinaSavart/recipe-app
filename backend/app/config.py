@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     # Optional regex for dynamic origins (e.g. Vercel preview deployments)
     ALLOWED_ORIGIN_REGEX: Optional[str] = None
 
+    # Netscape cookies file for yt-dlp, used instead of browser cookies
+    # when set (e.g. on a server without a browser)
+    COOKIES_FILE: Optional[str] = None
+
     class Config:
         env_file = ".env"
 

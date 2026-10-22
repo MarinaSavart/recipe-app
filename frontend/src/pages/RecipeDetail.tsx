@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import MacroBox from '../components/MacroBox'
+import { useConfirm } from '../hooks/useConfirm'
 import { getRecipe, deleteRecipe, likeRecipe, unlikeRecipe } from '../services/api'
 import type { Recipe } from '../types/recipe'
 import { formatQty, groupIngredientsBySection, resolveMediaUrl } from '../utils/recipeDisplay'
@@ -13,6 +14,7 @@ export default function RecipeDetail() {
   const [recipe, setRecipe] = useState<Recipe | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const { confirm, dialog } = useConfirm()
   const [deleting, setDeleting] = useState(false)
   const [portions, setPortions] = useState<number>(1)
 
@@ -50,7 +52,13 @@ export default function RecipeDetail() {
   /** Confirms and deletes the recipe, then navigates back to the recipe list. */
   async function handleDelete() {
     if (!recipe) return
-    if (!confirm(`Supprimer "${recipe.title}" ?`)) return
+    const confirmed = await confirm({
+      title: `Supprimer "${recipe.title}" ?`,
+      message: 'Cette action est définitive.',
+      confirmLabel: 'Supprimer',
+      danger: true,
+    })
+    if (!confirmed) return
     setDeleting(true)
     try {
       await deleteRecipe(recipe.id)
@@ -237,6 +245,7 @@ export default function RecipeDetail() {
         </div>
       )}
 
+      {dialog}
     </div>
   )
 }
