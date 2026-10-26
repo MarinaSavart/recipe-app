@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { importFromUrl, importManual } from '../services/api'
 import { CATEGORIES, type CategoryKey } from '../utils/categories'
+import { extractSharedUrl } from '../utils/share'
 
 type ToastType = 'success' | 'error'
 
@@ -13,9 +14,10 @@ interface Toast {
 /** Recipe import page: automatic import from a URL, or manual import from a pasted description. */
 export default function RecipeImport() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
 
-  // Import URL
-  const [url, setUrl] = useState('')
+  // Import URL, prefilled when a link is shared to the app from another app
+  const [url, setUrl] = useState(() => extractSharedUrl(searchParams))
   const [loadingUrl, setLoadingUrl] = useState(false)
 
   // Import manuel

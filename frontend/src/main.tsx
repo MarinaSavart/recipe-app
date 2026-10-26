@@ -27,7 +27,7 @@ type Theme = 'dark' | 'light'
 function PrivateRoute({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   const location = useLocation()
-  return user ? <>{children}</> : <Navigate to="/login" replace state={{ from: location.pathname }} />
+  return user ? <>{children}</> : <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />
 }
 
 /** Main authenticated layout: navbar, mobile menu, theme toggle, and routed pages. */
