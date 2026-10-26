@@ -86,7 +86,9 @@ def _extract_sync(url: str, platform: str) -> dict:
         except yt_dlp.utils.YoutubeDLError as e:
             logger.debug("Failed without cookies: %s. Retrying with browser cookies.", e)
 
-    if settings.COOKIES_FILE and Path(settings.COOKIES_FILE).is_file():
+    if settings.COOKIES_FILE and not Path(settings.COOKIES_FILE).is_file():
+        logger.warning("COOKIES_FILE is set but no file was found at %s", settings.COOKIES_FILE)
+    elif settings.COOKIES_FILE:
         logger.debug("Attempting with cookies file")
         ydl_opts = {
             "quiet": True,
