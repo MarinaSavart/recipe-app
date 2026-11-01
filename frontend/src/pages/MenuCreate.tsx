@@ -14,7 +14,7 @@ type GenerationState =
   | { status: 'generating' }
   | { status: 'error'; message: string }
 
-/** Configuration form for a new menu: a name and a number of meals, filled by Ollama. */
+/** Configuration form for a new menu: a name and a number of meals, filled by the LLM (OpenRouter). */
 export default function MenuCreate() {
   const navigate = useNavigate()
   const { user } = useAuth()
