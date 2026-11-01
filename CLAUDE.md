@@ -14,7 +14,7 @@
 ### Backend
 
 * Python 3.13 + FastAPI + SQLAlchemy 2.x (async) + PostgreSQL
-* OpenRouter (Nemotron 3 Super) pour le parsing des recettes
+* OpenRouter (Nemotron 3 Ultra) pour le parsing des recettes, la génération de menus et l'enrichissement des ingrédients (Ciqual)
 * yt-dlp pour l'extraction des métadonnées Instagram/TikTok
 
 ### Frontend
