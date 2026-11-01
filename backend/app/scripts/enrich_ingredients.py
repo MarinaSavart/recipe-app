@@ -66,7 +66,7 @@ async def run(recipe_id: int | None, force: bool, rematch: bool, update_macros: 
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Enrich existing recipes' ingredients (Mistral + Ciqual).")
+    parser = argparse.ArgumentParser(description="Enrich existing recipes' ingredients (LLM + Ciqual).")
     parser.add_argument("--recipe-id", type=int, help="only this recipe")
     parser.add_argument("--force", action="store_true", help="re-enrich ingredients already enriched (Ciqual links kept)")
     parser.add_argument("--rematch", action="store_true", help="like --force, and also redo the Ciqual links (even hand-picked ones)")

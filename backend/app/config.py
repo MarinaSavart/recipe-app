@@ -8,7 +8,7 @@ class Settings(BaseSettings):
 
     # LLM (OpenRouter)
     OPENROUTER_API_KEY: str
-    OPENROUTER_MODEL: str = "nvidia/nemotron-3-super-120b-a12b:free"
+    OPENROUTER_MODEL: str = "nvidia/nemotron-3-ultra-550b-a55b:free"
 
     # Auth
     SECRET_KEY: str

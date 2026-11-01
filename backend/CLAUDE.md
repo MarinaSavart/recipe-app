@@ -20,19 +20,23 @@
 * asyncpg
 * Alembic
 * Pydantic v2
-* OpenRouter (Nemotron 3 Super) pour le parsing des recettes
+* OpenRouter (Nemotron 3 Ultra) pour le parsing des recettes, la génération de menus et l'enrichissement des ingrédients (Ciqual)
 * yt-dlp pour l'extraction de métadonnées Instagram/TikTok
 * bcrypt pour le hashage des mots de passe
 * JWT pour l'authentification
 
 ### LLM
 
-* OpenRouter est le provider LLM utilisé (`app/services/claude.py`)
+* OpenRouter est le seul provider LLM :
+  * `app/services/claude.py` — parsing description → JSON recette
+  * `app/services/menu_generator.py` — choix des recettes d'un menu
+  * `app/services/ingredient_enrichment.py` — nom canonique, rayon, poids et lien Ciqual des ingrédients
 * API compatible OpenAI — endpoint : `https://openrouter.ai/api/v1/chat/completions`
-* Modèle par défaut : `nvidia/nemotron-3-super-120b-a12b:free` (gratuit, quota limité)
+* Modèle par défaut : `nvidia/nemotron-3-ultra-550b-a55b:free` (gratuit, quota limité)
 * Pour changer de modèle : modifier `OPENROUTER_MODEL` dans `.env` sans toucher au code
-* Ollama n'est plus requis pour le parsing — peut être désinstallé ou gardé en backup
-* Ne pas revenir à Ollama sans demande explicite
+* Les modèles gratuits peuvent disparaître sans prévenir (erreur 404 du provider) : vérifier qu'un modèle répond avant d'en faire le défaut
+* Le raisonnement est désactivé dans les appels (`"reasoning": {"enabled": False}`) : sinon le modèle réfléchit plusieurs minutes et peut renvoyer un JSON cassé
+* Ollama n'est plus utilisé : ne pas le réintroduire sans demande explicite
 * `ANTHROPIC_API_KEY` reste disponible pour une intégration future éventuelle
 
 ---
@@ -67,6 +71,8 @@ app/
 ├── services/
 │   ├── extractor.py     # Wrapper yt-dlp
 │   ├── claude.py        # OpenRouter parsing description → JSON
+│   ├── menu_generator.py # OpenRouter génération de menus
+│   ├── ingredient_enrichment.py # OpenRouter + Ciqual enrichissement des ingrédients
 │   └── auth.py          # bcrypt + JWT
 │
 └── routers/
@@ -134,6 +140,10 @@ ACCESS_TOKEN_EXPIRE_MINUTES=10080
 GOOGLE_CLIENT_ID=              # optionnel
 
 ANTHROPIC_API_KEY=             # optionnel — uniquement si Claude API est utilisé
+
+OPENROUTER_API_KEY=            # obligatoire — parsing, génération de menus, enrichissement
+
+OPENROUTER_MODEL=nvidia/nemotron-3-ultra-550b-a55b:free
 ```
 
 ---
@@ -333,4 +343,4 @@ except ValueError as exc:
 * ❌ `except Exception: pass`
 * ❌ Modification directe du schéma DB sans migration Alembic
 * ❌ Utilisation de l'API Anthropic sans demande explicite
-* ❌ Revenir à Ollama sans demande explicite
+* ❌ Réintroduire Ollama sans demande explicite

@@ -89,7 +89,7 @@ src/
 ## Variables d'environnement (.env)
 
 ```
-VITE_API_URL=http://localhost:8000
+VITE_API_URL=http://localhost:8742
 ```
 
 ---

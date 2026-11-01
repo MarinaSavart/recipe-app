@@ -349,7 +349,7 @@ export default function RecipeEdit() {
           <div className="edit-section__title">Ingrédients (quantités pour 1 portion)</div>
           <p className="edit-section__hint">
             Tape le nom d'un ingrédient pour voir les aliments Ciqual correspondants : en choisir un
-            fixe son rayon et ses valeurs nutritionnelles. Sans choix, Mistral le devine quand
+            fixe son rayon et ses valeurs nutritionnelles. Sans choix, l'IA le devine quand
             l'ingrédient est ajouté ou modifié.
           </p>
           {ingredients.map((ing, i) => (

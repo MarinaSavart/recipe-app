@@ -17,7 +17,7 @@ Interface web construite avec **React** + **TypeScript** + **Vite** pour gérer 
 ## Prérequis
 
 - Node.js 18+
-- Le backend lancé sur `http://localhost:8000`
+- Le backend lancé sur `http://localhost:8742`
 
 ---
 
@@ -44,7 +44,7 @@ cp .env.example .env
 Le `.env` par défaut pointe sur le backend local :
 
 ```env
-VITE_API_URL=http://localhost:8000
+VITE_API_URL=http://localhost:8742
 ```
 
 ### 4. Lance le serveur de développement

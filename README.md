@@ -77,13 +77,9 @@ uvicorn app.main:app --reload --port 8742
 
 > `alembic upgrade head` applique les migrations en attente (nouvelles colonnes, tables...). À relancer à chaque fois que tu récupères des changements qui incluent une migration (`git pull`).
 
-**Terminal 3 — Plus nécessaire !**
-```bash
-# Le parsing est maintenant géré par OpenRouter (cloud)
-# Assure-toi d'avoir OPENROUTER_API_KEY dans backend/.env
-```
+> Toutes les fonctions IA (parsing des recettes, génération de menus, enrichissement des ingrédients) passent par OpenRouter (cloud) : il suffit d'avoir `OPENROUTER_API_KEY` dans `backend/.env`, rien à installer en local.
 
-**Terminal 4 — Frontend**
+**Terminal 3 — Frontend**
 ```bash
 cd frontend
 npm run dev
@@ -96,8 +92,8 @@ npm run dev
 | Service | URL |
 |---------|-----|
 | App     | [http://localhost:5173](http://localhost:5173) |
-| API     | [http://localhost:8000](http://localhost:8000) |
-| Swagger | [http://localhost:8000/docs](http://localhost:8000/docs) |
+| API     | [http://localhost:8742](http://localhost:8742) |
+| Swagger | [http://localhost:8742/docs](http://localhost:8742/docs) |
 
 ---
 

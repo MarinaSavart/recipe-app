@@ -12,7 +12,7 @@ from app.models.user import User
 from app.schemas.menu import MenuItemCreate
 from app.services import recipe as recipe_service
 
-# Keeps the Ollama prompt within a reasonable context size
+# Keeps the LLM prompt within a reasonable context size
 MAX_RECIPES_FOR_GENERATION = 60
 # Generated menus are made of main-meal recipes (extras of any category can be added by hand)
 MENU_CATEGORY = "repas"
@@ -190,7 +190,7 @@ async def get_items_with_ingredients(menu_id: int, db: AsyncSession) -> list[Men
 
 async def get_generation_recipes(db: AsyncSession) -> list[dict]:
     """
-    "Repas" recipes offered to the generator, in the compact shape sent to Ollama.
+    "Repas" recipes offered to the generator, in the compact shape sent to the LLM (OpenRouter).
     Recipes with nutritional info come first, then the most recent ones.
     """
     result = await db.execute(
