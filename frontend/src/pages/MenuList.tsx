@@ -92,7 +92,7 @@ export default function MenuList() {
       ) : (
         <ul className="menu-list__items">
           {state.menus.map(menu => (
-            <li key={menu.id} className="menu-list__item">
+            <li key={menu.id} className="menu-list__item" onClick={() => navigate(`/menus/${menu.id}`)}>
               <div className="menu-list__info">
                 <div className="menu-list__name">
                   {menu.name}
