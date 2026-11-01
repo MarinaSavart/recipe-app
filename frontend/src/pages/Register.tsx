@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import PasswordInput from '../components/PasswordInput'
 import { useAuth } from '../context/AuthContext'
 import { register as registerRequest } from '../services/api'
 import { redirectAfterAuth } from '../utils/auth'
@@ -75,22 +76,20 @@ export default function Register() {
 
         <div className="auth-page__field">
           <label>Mot de passe</label>
-          <input
-            type="password"
-            placeholder="••••••••"
+          <PasswordInput
             value={password}
-            onChange={e => setPassword(e.target.value)}
+            onChange={setPassword}
+            autoComplete="new-password"
           />
         </div>
 
         <div className="auth-page__field">
           <label>Confirme le mot de passe</label>
-          <input
-            type="password"
-            placeholder="••••••••"
+          <PasswordInput
             value={confirm}
-            onChange={e => setConfirm(e.target.value)}
+            onChange={setConfirm}
             onKeyDown={e => e.key === 'Enter' && handleRegister()}
+            autoComplete="new-password"
           />
         </div>
 

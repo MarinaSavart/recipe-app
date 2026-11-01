@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import PasswordInput from '../components/PasswordInput'
 import { useAuth } from '../context/AuthContext'
 import { login as loginRequest } from '../services/api'
 import { redirectAfterAuth } from '../utils/auth'
@@ -56,12 +57,11 @@ export default function Login() {
 
         <div className="auth-page__field">
           <label>Mot de passe</label>
-          <input
-            type="password"
-            placeholder="••••••••"
+          <PasswordInput
             value={password}
-            onChange={e => setPassword(e.target.value)}
+            onChange={setPassword}
             onKeyDown={e => e.key === 'Enter' && handleLogin()}
+            autoComplete="current-password"
           />
         </div>
 
