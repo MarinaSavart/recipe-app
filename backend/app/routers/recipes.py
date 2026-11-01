@@ -47,7 +47,7 @@ async def import_from_url(
     Steps:
       1. yt-dlp extracts the description and metadata
       2. Claude parses the description into a structured recipe
-      3. We save it to the database, enrich its ingredients (Mistral + Ciqual)
+      3. We save it to the database, enrich its ingredients (LLM + Ciqual)
          and return the recipe
     A category can optionally be supplied to override Claude's guess,
     for cases where it can't be reliably inferred from the video.

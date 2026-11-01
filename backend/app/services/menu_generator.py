@@ -184,7 +184,11 @@ async def generate_menu(
         )
         response.raise_for_status()
 
-    raw = (response.json()["choices"][0]["message"]["content"] or "").strip()
+    body = response.json()
+    if "choices" not in body:
+        # OpenRouter reports some provider failures (rate limit, model down) with a 200
+        raise httpx.HTTPError(f"OpenRouter error: {body.get('error', {}).get('message', 'no choices')}")
+    raw = (body["choices"][0]["message"]["content"] or "").strip()
 
     # Strip backticks just in case
     if raw.startswith("```"):

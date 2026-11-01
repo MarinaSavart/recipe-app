@@ -10,7 +10,7 @@ API REST construite avec **FastAPI** + **PostgreSQL** + **OpenRouter** pour extr
 - **PostgreSQL** — base de données
 - **SQLAlchemy 2.0** — ORM async
 - **yt-dlp** — extraction de métadonnées Instagram / TikTok
-- **OpenRouter** (Nemotron 3 Super) — parsing de la description en JSON structuré
+- **OpenRouter** (Nemotron 3 Ultra) — parsing de la description en JSON structuré, génération de menus et enrichissement des ingrédients (nom canonique, rayon, poids, lien Ciqual)
 - **Docker** — pour lancer PostgreSQL
 
 ---
@@ -59,8 +59,8 @@ cp .env.example .env
 
 ```env
 DATABASE_URL=postgresql+asyncpg://postgres:password@localhost:5432/recipes
-OPENROUTER_API_KEY=       # obligatoire, pour le parsing des recettes
-OPENROUTER_MODEL=nvidia/nemotron-3-super-120b-a12b:free
+OPENROUTER_API_KEY=       # obligatoire : parsing des recettes, génération de menus, enrichissement des ingrédients
+OPENROUTER_MODEL=nvidia/nemotron-3-ultra-550b-a55b:free   # modèle gratuit ; s'il renvoie 404, en choisir un autre sur openrouter.ai/models
 ANTHROPIC_API_KEY=        # optionnel, uniquement si tu utilises l'API Claude
 ```
 
@@ -76,8 +76,8 @@ docker-compose up -d
 uvicorn app.main:app --reload --port 8742
 ```
 
-L'API est disponible sur [http://localhost:8000](http://localhost:8000)
-La doc Swagger est disponible sur [http://localhost:8000/docs](http://localhost:8000/docs)
+L'API est disponible sur [http://localhost:8742](http://localhost:8742)
+La doc Swagger est disponible sur [http://localhost:8742/docs](http://localhost:8742/docs)
 
 ### 7. Importe la table Ciqual (rayons et nutrition des ingrédients)
 
@@ -85,14 +85,14 @@ La doc Swagger est disponible sur [http://localhost:8000/docs](http://localhost:
 # Télécharge les fichiers XML de l'Anses dans backend/data/ciqual/ (~70 Mo, une seule fois) et remplit ciqual_foods
 python -m app.scripts.import_ciqual
 
-# Enrichit les ingrédients des recettes existantes (nom canonique, rayon, poids, lien Ciqual — Ollama requis)
+# Enrichit les ingrédients des recettes existantes (nom canonique, rayon, poids, lien Ciqual — via OpenRouter)
 python -m app.scripts.enrich_ingredients
 # Options : --recipe-id 16 (une recette), --force (refait noms/rayons/poids, garde les liens Ciqual),
 #           --rematch (refait aussi les liens, même ceux choisis à la main),
 #           --update-macros (remplace les macros par le calcul Ciqual quand il est complet)
 ```
 
-Les nouvelles recettes sont enrichies automatiquement à l'import. Dans l'édition d'une recette, le nom de chaque ingrédient propose les aliments Ciqual correspondants (`GET /ciqual/search`) : un aliment choisi à la main n'est jamais remplacé par Mistral. Leurs macros sont recalculées depuis Ciqual quand chaque ingrédient pesé a été relié à un aliment ; sinon l'estimation de Mistral est conservée.
+Les nouvelles recettes sont enrichies automatiquement à l'import. Dans l'édition d'une recette, le nom de chaque ingrédient propose les aliments Ciqual correspondants (`GET /ciqual/search`) : un aliment choisi à la main n'est jamais remplacé par l'IA. Leurs macros sont recalculées depuis Ciqual quand chaque ingrédient pesé a été relié à un aliment ; sinon l'estimation du modèle est conservée.
 
 ---
 
@@ -124,7 +124,9 @@ backend/
 │   │   └── recipe.py        # Schemas Pydantic
 │   ├── services/
 │   │   ├── extractor.py     # Extraction yt-dlp
-│   │   └── claude.py        # Parsing OpenRouter
+│   │   ├── claude.py        # Parsing OpenRouter
+│   │   ├── menu_generator.py # Génération de menus OpenRouter
+│   │   └── ingredient_enrichment.py # Enrichissement OpenRouter + Ciqual
 │   └── routers/
 │       └── recipes.py       # Endpoints
 ├── uploads/                 # Photos uploadées

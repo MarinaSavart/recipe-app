@@ -62,7 +62,7 @@ class Ingredient(Base):
     unit: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)       # "g"
     notes: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)     # "5% fat"
 
-    # Enrichment (Mistral + Ciqual), null until the ingredient has been enriched
+    # Enrichment (LLM + Ciqual), null until the ingredient has been enriched
     canonical_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)  # "gousses d'ail" → "ail"
     aisle: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)            # store aisle key
     weight_g: Mapped[Optional[float]] = mapped_column(Float, nullable=True)            # estimated weight of the quantity

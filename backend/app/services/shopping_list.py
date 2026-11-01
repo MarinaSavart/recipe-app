@@ -51,7 +51,7 @@ class ShoppingLine:
     name: str
     unit: str | None
     quantity: float | None = None
-    aisle: str | None = None  # from the ingredients' enrichment (Ciqual / Mistral)
+    aisle: str | None = None  # from the ingredients' enrichment (Ciqual / LLM)
     # Quantities that couldn't be parsed, kept as written ("quelques gouttes")
     extras: list[str] = field(default_factory=list)
     recipes: list[str] = field(default_factory=list)
