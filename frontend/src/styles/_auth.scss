@@ -128,3 +128,31 @@
     margin-bottom: $spacing-md;
   }
 }
+
+// ── Champ mot de passe avec bouton œil ─────────────────────────────────────────
+.password-input {
+  position: relative;
+
+  // Room for the eye button (the field's look comes from .auth-page__field input)
+  &__field { padding-right: 44px !important; }
+
+  &__toggle {
+    position: absolute;
+    top: 50%;
+    right: $spacing-xs;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: $radius-sm;
+    color: $bg;
+    transition: color $transition;
+
+    &:hover,
+    &[aria-pressed='true'] { color: $muted; }
+
+    &:focus-visible { outline: 2px solid $amber-dim; outline-offset: -2px; }
+  }
+}
