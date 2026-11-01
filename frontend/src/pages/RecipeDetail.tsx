@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import MacroBox from '../components/MacroBox'
 import { useConfirm } from '../hooks/useConfirm'
+import { useWakeLock } from '../hooks/useWakeLock'
 import { getRecipe, deleteRecipe, likeRecipe, unlikeRecipe } from '../services/api'
 import type { Recipe } from '../types/recipe'
 import { formatQty, groupIngredientsBySection, resolveMediaUrl } from '../utils/recipeDisplay'
@@ -15,6 +16,8 @@ export default function RecipeDetail() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const { confirm, dialog } = useConfirm()
+  // Cooking from the phone: the screen mustn't go to sleep while the recipe is open
+  useWakeLock()
   const [deleting, setDeleting] = useState(false)
   const [portions, setPortions] = useState<number>(1)
 
