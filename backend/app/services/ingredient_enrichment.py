@@ -1,15 +1,15 @@
 """
 Enriches a recipe's ingredients so shopping lists and macros are reliable:
 
-1. Mistral normalizes each ingredient: canonical name ("gousses d'ail" → "ail"),
+1. The LLM (OpenRouter) normalizes each ingredient: canonical name ("gousses d'ail" → "ail"),
    store aisle, and estimated weight in grams of the given quantity.
 2. Each ingredient is linked to a food of the ANSES-Ciqual table: the code
-   pre-selects close candidates by name, Mistral picks the right one (or none).
+   pre-selects close candidates by name, the LLM picks the right one (or none).
    A Ciqual match gives the official aisle and nutrition per 100 g.
 3. Optionally, the recipe's macros per serving are recomputed from Ciqual,
    only when every weighed ingredient is matched (otherwise they're kept).
 
-Failures (Ollama down, unusable answer) never break the caller: the ingredients
+Failures (OpenRouter unreachable, unusable answer) never break the caller: the ingredients
 just stay un-enriched and the shopping list falls back to name keywords.
 """
 import json
@@ -22,17 +22,16 @@ import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.models.ciqual import CiqualFood
 from app.models.recipe import Ingredient, Recipe
 from app.services.aisles import AISLES
+from app.services.claude import OPENROUTER_URL
 from app.services.shopping_list import SECTION_MARKER, normalize_unit, parse_quantity
 
 logger = logging.getLogger(__name__)
 
-OLLAMA_URL = "http://localhost:11434/api/generate"
-OLLAMA_MODEL = "mistral"
-OLLAMA_TIMEOUT_SECONDS = 180.0
-OLLAMA_NUM_CTX = 8192
+OPENROUTER_TIMEOUT_SECONDS = 120.0
 
 MAX_CANDIDATES = 6
 STOPWORDS = {"de", "du", "des", "d", "la", "le", "les", "l", "et", "au", "aux", "en", "a", "un", "une"}
@@ -111,7 +110,7 @@ def find_candidates(
     extra words of the food's main term ("Haricot beurre" for "beurre"), a little
     for its qualifiers after the comma, with a bonus when both names start with the
     same word and a small one for raw forms (recipes list raw ingredients).
-    The right food only has to be among the candidates: Mistral picks the final one.
+    The right food only has to be among the candidates: the LLM picks the final one.
     With `prefix` (autocomplete), the last word may be incomplete: "cham" → "champignon".
     """
     query_tokens = [synonym for token in _tokens(name) for synonym in SEARCH_SYNONYMS.get(token, [token])]
@@ -157,27 +156,47 @@ async def search_foods(query: str, db: AsyncSession, limit: int = 8) -> list[dic
     ]
 
 
-# ── Mistral ────────────────────────────────────────────────────────────────────
+# ── LLM (OpenRouter) ────────────────────────────────────────────────────────────────────
 
-async def _ask_ollama(prompt: str) -> list[dict]:
+async def _ask_llm(prompt: str) -> list[dict]:
     """Sends a prompt expecting {"items": [...]} and returns the list of dict items."""
-    async with httpx.AsyncClient(timeout=OLLAMA_TIMEOUT_SECONDS) as client:
+    async with httpx.AsyncClient(timeout=OPENROUTER_TIMEOUT_SECONDS) as client:
         response = await client.post(
-            OLLAMA_URL,
+            OPENROUTER_URL,
+            headers={
+                "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
+                "Content-Type": "application/json",
+                # Recommended by OpenRouter to identify the app
+                "HTTP-Referer": "https://mise-en-bouche.app",
+                "X-Title": "Mise en Bouche",
+            },
             json={
-                "model": OLLAMA_MODEL,
-                "prompt": prompt,
-                "stream": False,
-                "format": "json",
-                "options": {"num_ctx": OLLAMA_NUM_CTX, "temperature": 0},
+                "model": settings.OPENROUTER_MODEL,
+                "messages": [{"role": "user", "content": prompt}],
+                "response_format": {"type": "json_object"},  # forces a JSON object
+                "temperature": 0,  # classification task → deterministic answers
+                # Reasoning models think for minutes (and may then emit broken JSON)
+                "reasoning": {"enabled": False},
             },
         )
         response.raise_for_status()
 
-    data = json.loads(response.json()["response"])
+    body = response.json()
+    if "choices" not in body:
+        # OpenRouter reports some provider failures (rate limit, model down) with a 200
+        raise httpx.HTTPError(f"OpenRouter error: {body.get('error', {}).get('message', 'no choices')}")
+    raw = (body["choices"][0]["message"]["content"] or "").strip()
+    # Strip backticks just in case
+    if raw.startswith("```"):
+        raw = raw.split("```")[1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+        raw = raw.strip()
+
+    data = json.loads(raw)
     items = data.get("items") if isinstance(data, dict) else data
     if not isinstance(items, list):
-        raise ValueError("Ollama n'a pas retourné de liste d'éléments.")
+        raise ValueError("Le modèle n'a pas retourné de liste d'éléments.")
     return [item for item in items if isinstance(item, dict)]
 
 
@@ -246,7 +265,7 @@ def _positive_float(value: object) -> float | None:
     return number if number > 0 else None
 
 
-# Aisles Mistral sometimes answers in English instead of the listed keys
+# Aisles the LLM sometimes answers in English instead of the listed keys
 AISLE_ALIASES: dict[str, str] = {
     "herbs": "produce", "vegetables": "produce", "fruits": "produce", "fruit": "produce",
     "fish": "meat", "seafood": "meat", "eggs": "dairy", "cheese": "dairy",
@@ -301,7 +320,7 @@ def _is_liquid(ingredient: Ingredient) -> bool:
 
 
 def _counted_weight(ingredient: Ingredient, unit_weight: object) -> float | None:
-    """Quantity × Mistral's weight of one unit ("6-8 pêches" → 8 × 150 g)."""
+    """Quantity × the LLM's weight of one unit ("6-8 pêches" → 8 × 150 g)."""
     parsed = parse_quantity(ingredient.quantity) if ingredient.quantity else None
     grams = _positive_float(unit_weight)
     return round(parsed[0] * grams, 1) if parsed and grams else None
@@ -314,14 +333,14 @@ def is_section_marker(ingredient: Ingredient) -> bool:
 
 
 async def _normalize(ingredients: list[Ingredient]) -> None:
-    """Step 1: canonical name, aisle and weight, from one Mistral call."""
-    for item in await _ask_ollama(_normalize_prompt(ingredients)):
+    """Step 1: canonical name, aisle and weight, from one LLM call."""
+    for item in await _ask_llm(_normalize_prompt(ingredients)):
         index = item.get("i")
         if not isinstance(index, int) or not 0 <= index < len(ingredients):
             continue
         ingredient = ingredients[index]
         canonical = item.get("nom_canonique")
-        # Mistral sometimes swaps the ingredient ("cottage cheese" → "fromage de chèvre") or
+        # The LLM sometimes swaps the ingredient ("cottage cheese" → "fromage de chèvre") or
         # answers in English: a canonical name must share a word with the original one
         if isinstance(canonical, str) and set(_tokens(canonical)) & set(_tokens(ingredient.name)):
             ingredient.canonical_name = canonical.strip()[:255]
@@ -359,12 +378,12 @@ RÉPONDS UNIQUEMENT avec un objet JSON valide :
 async def _fill_missing_weights(ingredients: list[Ingredient]) -> None:
     """
     Second, focused call for ingredients with a numeric quantity but no weight yet:
-    Mistral answers null more often inside the bigger normalization prompt.
+    The LLM answers null more often inside the bigger normalization prompt.
     """
     missing = [i for i in ingredients if i.weight_g is None and i.quantity and parse_quantity(i.quantity)]
     if not missing:
         return
-    for item in await _ask_ollama(_weights_prompt(missing)):
+    for item in await _ask_llm(_weights_prompt(missing)):
         position = item.get("i")
         if isinstance(position, int) and 0 <= position < len(missing):
             missing[position].weight_g = _counted_weight(missing[position], item.get("poids_unitaire_g"))
@@ -382,7 +401,7 @@ async def _match_ciqual(ingredients: list[Ingredient], index: dict[int, _Indexed
         return
 
     def described(position: int, name: str) -> str:
-        """The name with its quantity, so Mistral can tell "1 L de bouillon" from a powder."""
+        """The name with its quantity, so the LLM can tell "1 L de bouillon" from a powder."""
         ingredient = ingredients[position]
         amount = " ".join(p for p in (ingredient.quantity, ingredient.unit) if p)
         return f"{name} ({amount})" if amount else name
@@ -390,14 +409,14 @@ async def _match_ciqual(ingredients: list[Ingredient], index: dict[int, _Indexed
     allowed = {position: {food.code for food in candidates} for position, _, candidates in requests}
     chosen: dict[int, int] = {}
     prompt_requests = [(position, described(position, name), candidates) for position, name, candidates in requests]
-    for item in await _ask_ollama(_match_prompt(prompt_requests)):
+    for item in await _ask_llm(_match_prompt(prompt_requests)):
         position, raw_code = item.get("i"), item.get("code")
         code = int(raw_code) if isinstance(raw_code, (int, str)) and str(raw_code).isdigit() else None
         if position in allowed and code in allowed[position]:
             chosen[position] = code
 
     for position, name, candidates in requests:
-        # Mistral is sometimes over-cautious: an obvious best candidate (containing every
+        # The LLM is sometimes over-cautious: an obvious best candidate (containing every
         # word of the ingredient, e.g. "purée de tomates" → "Tomate, purée…") is taken anyway
         code = chosen.get(position)
         if code is None and set(_tokens(name)) <= candidates[0].tokens:
