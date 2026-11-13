@@ -82,12 +82,12 @@ export default function RecipeCard({ recipe, isLiked, onLikeToggle, matchedIngre
             </span>
           )}
           {recipe.carbs_g && (
-            <span className="macro-pill">
+            <span className="macro-pill macro-pill--secondary">
               <strong>{Math.round(recipe.carbs_g)}</strong> gluc.
             </span>
           )}
           {recipe.fats_g && (
-            <span className="macro-pill">
+            <span className="macro-pill macro-pill--secondary">
               <strong>{Math.round(recipe.fats_g)}</strong> lip.
             </span>
           )}

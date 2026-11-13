@@ -785,12 +785,15 @@
 @media (max-width: 768px) {
   .page-header__title { font-size: 26px; }
 
+  // Chips wrap on a few lines (all visible, one tap) instead of a sideways scroll
   .category-filters {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding-bottom: $spacing-xs;
+    gap: 6px;
+    margin-bottom: $spacing-lg;
 
-    &__btn { flex-shrink: 0; }
+    &__btn {
+      padding: 6px 10px;
+      font-size: 12px;
+    }
 
     &--wrap {
       flex-wrap: wrap;
@@ -799,9 +802,13 @@
     }
   }
 
+  // Two compact cards per row (see .recipe-card in _cards.scss)
   .recipes-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: $spacing-sm;
   }
+
+  .page-header { margin-bottom: $spacing-lg; }
 
   .detail {
     max-width: 100%;

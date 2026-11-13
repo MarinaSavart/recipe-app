@@ -132,6 +132,58 @@
   }
 }
 
+// ── Mobile: compact cards, two per row ─────────────────────────────────────────
+// Only what helps picking a recipe; source, author and every macro stay on the recipe page
+@media (max-width: 768px) {
+  .recipe-card {
+    border-radius: $radius-lg;
+
+    &:hover { transform: none; }
+
+    &__thumb,
+    &__thumb--placeholder { aspect-ratio: 4 / 3; }
+
+    &__body { padding: $spacing-sm 10px 5px; }
+
+    &__platform { display: none; }
+
+    &__category {
+      font-size: 9px;
+      letter-spacing: 0.6px;
+      margin-bottom: 2px;
+    }
+
+    &__title {
+      font-size: 14px;
+      margin-bottom: $spacing-xs;
+      // One line, cut with "…" when longer: every card keeps the same height
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    &__author { display: none; }
+
+    &__match {
+      font-size: 11px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    &__macros { gap: 4px; margin-top: $spacing-xs; }
+
+    &__like-btn { font-size: 17px; }
+  }
+
+  .macro-pill {
+    font-size: 10px;
+    padding: 2px 6px;
+
+    &--secondary { display: none; }
+  }
+}
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }

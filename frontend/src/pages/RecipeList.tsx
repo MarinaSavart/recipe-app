@@ -54,7 +54,7 @@ export default function RecipeList({ onCountChange }: RecipeListProps) {
         <input
           className="recipe-search__input"
           type="search"
-          placeholder="🔍 Rechercher une recette ou un ingrédient…"
+          placeholder="🔍 Recette ou ingrédient…"
           value={query}
           onChange={e => setQuery(e.target.value)}
           aria-label="Rechercher une recette par nom ou par ingrédient"
