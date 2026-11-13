@@ -1,4 +1,4 @@
-import type { CiqualFood, Recipe, RecipeListItem, UpdateRecipePayload } from "../types/recipe"
+import type { CiqualFood, Recipe, RecipeListItem, RecipeSearchItem, UpdateRecipePayload } from "../types/recipe"
 import type { Menu, MenuGenerateParams, MenuGuest, MenuItem, MenuListItem, ShoppingListItem } from "../types/menu"
 import { DEFAULT_GOALS, type SyncedNutritionalGoals } from "../types/profil"
 
@@ -103,11 +103,14 @@ export async function register(name: string, email: string, password: string): P
 
 // ── Recipes ────────────────────────────────────────────────────────────────────
 
-/** Fetches the lightweight list of all recipes, optionally filtered by category. */
-export async function getRecipes(category?: string): Promise<RecipeListItem[]> {
+/** Fetches the lightweight list of all recipes with their ingredient names, optionally filtered by category. */
+export async function getRecipes(category?: string): Promise<RecipeSearchItem[]> {
     const params = category ? `?category=${encodeURIComponent(category)}` : ''
-    const raw = await request<RawRecipeListItem[]>(`/recipes/${params}`)
-    return raw.map(mapRecipeListItem)
+    const raw = await request<(RawRecipeListItem & { ingredient_names: string[] })[]>(`/recipes/${params}`)
+    return raw.map(({ ingredient_names, ...item }) => ({
+        ...mapRecipeListItem(item),
+        ingredientNames: ingredient_names,
+    }))
 }
 
 /** Fetches a single recipe with its full details (ingredients, steps). */

@@ -66,6 +66,13 @@
     margin-bottom: $spacing-md;
   }
 
+  // Ingredients that matched the home page search
+  &__match {
+    font-size: 12px;
+    color: $amber;
+    margin-bottom: $spacing-xs;
+  }
+
   &__macros {
     display: flex;
     align-items: center;

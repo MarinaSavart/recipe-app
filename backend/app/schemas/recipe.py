@@ -116,6 +116,10 @@ class RecipeListItem(BaseModel):
     created_at: datetime
     model_config = {"from_attributes": True}
 
+class RecipeSearchItem(RecipeListItem):
+    # home page item: also the ingredient names, so the page can search by ingredient
+    ingredient_names: list[str]
+
 class RecipeFormCreate(BaseModel):
     # a recipe written by hand in the creation form (no source, no LLM parsing)
     title: str = Field(min_length=1, max_length=255)

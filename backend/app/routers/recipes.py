@@ -4,6 +4,7 @@ import httpx
 from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.dependencies import get_current_user, get_optional_user
@@ -16,6 +17,7 @@ from app.schemas.recipe import (
     RecipeFormCreate,
     RecipeListItem,
     RecipeOut,
+    RecipeSearchItem,
     RecipeUpdate,
 )
 from app.services import ingredient_enrichment as enrichment_service
@@ -234,26 +236,28 @@ async def list_my_recipes(
     return recipes
 
 
-@router.get("/", response_model=list[RecipeListItem])
+@router.get("/", response_model=list[RecipeSearchItem])
 async def list_recipes(
     category: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User | None = Depends(get_optional_user),
 ):
     """
-    Returns all recipes (visible to any user, logged in or not),
-    lightweight version (no ingredients/steps). Sorted from newest to oldest.
-    Optionally filtered by category.
+    Returns all recipes (visible to any user, logged in or not), lightweight version
+    with only their ingredient names (for the home page search), no steps.
+    Sorted from newest to oldest. Optionally filtered by category.
     """
     if category is not None and category not in ALLOWED_CATEGORIES:
         raise HTTPException(status_code=422, detail="Catégorie invalide")
 
-    query = select(Recipe).order_by(Recipe.created_at.desc())
+    # One extra query for every recipe's ingredients (no N+1)
+    query = select(Recipe).options(selectinload(Recipe.ingredients)).order_by(Recipe.created_at.desc())
     if category is not None:
         query = query.where(Recipe.category == category)
 
     result = await db.execute(query)
     recipes = list(result.scalars().all())
+    recipe_service.attach_ingredient_names(recipes)
     await recipe_service.attach_like_metadata(recipes, db, current_user)
     return recipes
 

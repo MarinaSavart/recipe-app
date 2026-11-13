@@ -11,10 +11,12 @@ interface RecipeCardProps {
   recipe: RecipeListItem
   isLiked: boolean
   onLikeToggle: (id: number) => void
+  /** Ingredients that matched a search, shown as "Contient : …" */
+  matchedIngredients?: string[]
 }
 
 /** Clickable recipe preview card with a thumbnail, macros, and a like toggle. */
-export default function RecipeCard({ recipe, isLiked, onLikeToggle }: RecipeCardProps) {
+export default function RecipeCard({ recipe, isLiked, onLikeToggle, matchedIngredients = [] }: RecipeCardProps) {
   const navigate = useNavigate()
   const [liked, setLiked] = useState(isLiked)
 
@@ -58,6 +60,10 @@ export default function RecipeCard({ recipe, isLiked, onLikeToggle }: RecipeCard
           <div className="recipe-card__category">
             {categoryLabel(recipe.category)}
           </div>
+        )}
+
+        {matchedIngredients.length > 0 && (
+          <div className="recipe-card__match">Contient : {matchedIngredients.join(', ')}</div>
         )}
 
         {recipe.source_author && (
