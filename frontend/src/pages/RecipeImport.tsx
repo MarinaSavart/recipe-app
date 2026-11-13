@@ -120,7 +120,7 @@ export default function RecipeImport() {
             onKeyDown={(e) => e.key === 'Enter' && handleImportUrl()}
           />
           <p className="import-page__hint">
-            Supporte Instagram, TikTok et YouTube.
+            Supporte Instagram, TikTok, YouTube et les sites de recettes.
             Pour YouTube, assure-toi que la recette est dans la description de la vidéo.
           </p>
           <button
@@ -134,6 +134,11 @@ export default function RecipeImport() {
               '⚡ Importer depuis l\'URL'
             )}
           </button>
+          {loadingUrl && (
+            <p className="import-page__progress" role="status">
+              L'IA analyse la recette… En général 10 à 30 secondes, jusqu'à une minute quand le service est chargé.
+            </p>
+          )}
         </div>
 
         {/* Divider */}
@@ -175,6 +180,11 @@ export default function RecipeImport() {
               '✍️ Importer la description'
             )}
           </button>
+          {loadingManual && (
+            <p className="import-page__progress" role="status">
+              L'IA analyse la recette… En général 10 à 30 secondes, jusqu'à une minute quand le service est chargé.
+            </p>
+          )}
         </div>
 
       </div>

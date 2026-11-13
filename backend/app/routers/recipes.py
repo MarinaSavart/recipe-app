@@ -1,6 +1,7 @@
 import logging
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+import httpx
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -24,6 +25,8 @@ from app.services.extractor import extract_from_url
 router = APIRouter(prefix="/recipes", tags=["recipes"])
 logger = logging.getLogger(__name__)
 
+AI_UNAVAILABLE_DETAIL = "Le service d'IA est surchargé ou indisponible. Réessaie dans un instant."
+
 ALLOWED_CATEGORIES = {
     "breakfast",
     "repas",
@@ -39,6 +42,7 @@ ALLOWED_CATEGORIES = {
 @router.post("/import", response_model=RecipeOut, status_code=status.HTTP_201_CREATED)
 async def import_from_url(
     payload: ImportRequest,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -47,8 +51,8 @@ async def import_from_url(
     Steps:
       1. yt-dlp extracts the description and metadata (a website: its schema.org recipe or text)
       2. Claude parses the description into a structured recipe
-      3. We save it to the database, enrich its ingredients (LLM + Ciqual)
-         and return the recipe
+      3. We save it to the database and return the recipe; its ingredients are
+         enriched (LLM + Ciqual) in the background, after the response
     A category can optionally be supplied to override Claude's guess,
     for cases where it can't be reliably inferred from the video.
     """
@@ -73,6 +77,13 @@ async def import_from_url(
         recipe_data = await parse_recipe(
             extracted.description,
             suggested_title=extracted.title
+        )
+    except httpx.HTTPError:
+        # OpenRouter too slow (free models are queued when busy) or unavailable
+        logger.warning("OpenRouter unavailable during recipe parsing", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=AI_UNAVAILABLE_DETAIL,
         )
     except Exception:
         logger.exception("Recipe parsing failed")
@@ -99,8 +110,9 @@ async def import_from_url(
     )
 
     saved_recipe = await recipe_service.get_or_404(recipe.id, db)
-    # Canonical names, aisles, Ciqual links; macros recomputed from Ciqual when complete
-    await enrichment_service.enrich_recipe(saved_recipe, db, update_macros=True)
+    # Canonical names, aisles, Ciqual links and macros recomputed from Ciqual: up to three
+    # LLM calls, done after the response so the import doesn't wait for them
+    background_tasks.add_task(enrichment_service.enrich_recipe_in_background, recipe.id, update_macros=True)
     await recipe_service.attach_like_metadata(saved_recipe, db, current_user)
     return saved_recipe
 
@@ -108,6 +120,7 @@ async def import_from_url(
 @router.post("/import/manual", response_model=RecipeOut, status_code=status.HTTP_201_CREATED)
 async def import_manual(
     payload: ImportManualRequest,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -126,6 +139,13 @@ async def import_manual(
 
     try:
         recipe_data = await parse_recipe(description)
+    except httpx.HTTPError:
+        # OpenRouter too slow (free models are queued when busy) or unavailable
+        logger.warning("OpenRouter unavailable during recipe parsing", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=AI_UNAVAILABLE_DETAIL,
+        )
     except Exception:
         logger.exception("Recipe parsing failed")
         raise HTTPException(
@@ -147,8 +167,9 @@ async def import_manual(
     )
 
     saved_recipe = await recipe_service.get_or_404(recipe.id, db)
-    # Canonical names, aisles, Ciqual links; macros recomputed from Ciqual when complete
-    await enrichment_service.enrich_recipe(saved_recipe, db, update_macros=True)
+    # Canonical names, aisles, Ciqual links and macros recomputed from Ciqual: up to three
+    # LLM calls, done after the response so the import doesn't wait for them
+    background_tasks.add_task(enrichment_service.enrich_recipe_in_background, recipe.id, update_macros=True)
     await recipe_service.attach_like_metadata(saved_recipe, db, current_user)
     return saved_recipe
 

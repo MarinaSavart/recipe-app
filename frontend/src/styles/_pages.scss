@@ -363,6 +363,13 @@
     margin-bottom: $spacing-md;
   }
 
+  // Shown under the button while the import runs, so a long wait doesn't look stuck
+  &__progress {
+    font-size: 12px;
+    color: $muted;
+    margin-top: $spacing-sm;
+  }
+
   &__divider {
     display: flex;
     align-items: center;

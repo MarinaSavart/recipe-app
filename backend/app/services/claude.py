@@ -7,6 +7,9 @@ from app.schemas.recipe import IngredientCreate, RecipeCreate, StepCreate
 
 # OpenRouter exposes an OpenAI-compatible chat completions API
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+# A normal parse takes 5-20 s: past a minute, the free model is queued and the user
+# is better off retrying than staring at a spinner
+PARSE_TIMEOUT_SECONDS = 60.0
 
 # ── System prompt ──────────────────────────────────────────────────────────────
 SYSTEM_PROMPT = """
@@ -74,7 +77,7 @@ async def parse_recipe(raw_description: str, suggested_title: str | None = None)
     if suggested_title:
         user_content = f"Titre de la video : {suggested_title}\n\n{raw_description}"
 
-    async with httpx.AsyncClient(timeout=120.0) as client:
+    async with httpx.AsyncClient(timeout=PARSE_TIMEOUT_SECONDS) as client:
         response = await client.post(
             OPENROUTER_URL,
             headers={
@@ -100,7 +103,10 @@ async def parse_recipe(raw_description: str, suggested_title: str | None = None)
         response.raise_for_status()
 
     result = response.json()
-    raw_json = result["choices"][0]["message"]["content"].strip()
+    if "choices" not in result:
+        # OpenRouter reports some provider failures (rate limit, model down) with a 200
+        raise httpx.HTTPError(f"OpenRouter error: {result.get('error', {}).get('message', 'no choices')}")
+    raw_json = (result["choices"][0]["message"]["content"] or "").strip()
 
     # Strip backticks just in case
     if raw_json.startswith("```"):
