@@ -9,6 +9,7 @@ interface MenuRecipeRowProps {
   disabled: boolean
   onReplace: (item: MenuItem) => void
   onDelete: (item: MenuItem) => void
+  onCookedChange: (item: MenuItem, cooked: boolean) => void
   /** Saves a new number of portions; resolves to true on success. */
   onPortionsChange: (item: MenuItem, portions: number) => Promise<boolean>
 }
@@ -16,10 +17,14 @@ interface MenuRecipeRowProps {
 const MIN_PORTIONS = 1
 const MAX_PORTIONS = 99
 
-/** A recipe of a menu: thumbnail, title, editable portions, per-meal macros, and replace/delete actions. */
-export default function MenuRecipeRow({ item, disabled, onReplace, onDelete, onPortionsChange }: MenuRecipeRowProps) {
+/**
+ * A recipe of a menu: thumbnail, title, editable portions, per-meal macros, and
+ * cooked / replace / delete actions. A cooked recipe is greyed and can only be put back or removed.
+ */
+export default function MenuRecipeRow({ item, disabled, onReplace, onDelete, onCookedChange, onPortionsChange }: MenuRecipeRowProps) {
   const navigate = useNavigate()
   const { recipe } = item
+  const cooked = item.cookedAt !== null
   // Portions being edited, or null when not editing
   const [draft, setDraft] = useState<number | null>(null)
 
@@ -29,7 +34,7 @@ export default function MenuRecipeRow({ item, disabled, onReplace, onDelete, onP
   }
 
   return (
-    <li className="menu-recipe">
+    <li className={`menu-recipe ${cooked ? 'menu-recipe--cooked' : ''}`}>
       {recipe?.thumbnail_url ? (
         <img
           className="menu-recipe__thumb"
@@ -54,7 +59,7 @@ export default function MenuRecipeRow({ item, disabled, onReplace, onDelete, onP
             <button
               className="menu-recipe__meals"
               onClick={() => setDraft(item.portions)}
-              disabled={disabled || !recipe}
+              disabled={disabled || !recipe || cooked}
               title="Modifier la quantité"
             >
               {portionsLabel(item)} <span className="menu-recipe__edit-icon">✎</span>
@@ -108,14 +113,25 @@ export default function MenuRecipeRow({ item, disabled, onReplace, onDelete, onP
 
       <div className="menu-recipe__actions">
         <button
-          className="menu-recipe__action-btn"
-          onClick={() => onReplace(item)}
+          className={`menu-recipe__action-btn ${cooked ? '' : 'menu-recipe__action-btn--done'}`}
+          onClick={() => onCookedChange(item, !cooked)}
           disabled={disabled}
-          title="Remplacer"
-          aria-label="Remplacer la recette"
+          title={cooked ? 'Remettre à cuisiner' : 'Marquer comme cuisinée'}
+          aria-label={cooked ? 'Remettre la recette à cuisiner' : 'Marquer la recette comme cuisinée'}
         >
-          ↻
+          {cooked ? '↩' : '✓'}
         </button>
+        {!cooked && (
+          <button
+            className="menu-recipe__action-btn"
+            onClick={() => onReplace(item)}
+            disabled={disabled}
+            title="Remplacer"
+            aria-label="Remplacer la recette"
+          >
+            ↻
+          </button>
+        )}
         <button
           className="menu-recipe__action-btn menu-recipe__action-btn--danger"
           onClick={() => onDelete(item)}

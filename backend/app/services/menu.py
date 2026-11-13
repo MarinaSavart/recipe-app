@@ -308,8 +308,19 @@ async def update_item(menu: Menu, item_id: int, payload: MenuItemCreate, db: Asy
         await db.flush()
         return existing
 
+    if item.recipe_id != recipe.id:
+        item.cooked_at = None  # a different recipe hasn't been cooked yet
     item.recipe_id = recipe.id
     item.portions = _portions(payload, recipe)
+    _touch(menu)
+    await db.flush()
+    return item
+
+
+async def set_item_cooked(menu: Menu, item_id: int, cooked: bool, db: AsyncSession) -> MenuItem:
+    """Marks a recipe of the menu as cooked (now), or back to cook."""
+    item = await _get_item_or_404(menu, item_id, db)
+    item.cooked_at = func.now() if cooked else None
     _touch(menu)
     await db.flush()
     return item

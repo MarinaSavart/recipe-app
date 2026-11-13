@@ -10,6 +10,7 @@ from app.models.user import User
 from app.schemas.menu import (
     MenuGenerateRequest,
     MenuGuestOut,
+    MenuItemCooked,
     MenuItemCreate,
     MenuListItem,
     MenuOut,
@@ -145,6 +146,20 @@ async def update_menu_item(
     """Replaces a recipe of a menu (owner or guest)."""
     menu = await menu_service.get_accessible_or_404(menu_id, current_user, db)
     await menu_service.update_item(menu, item_id, payload, db)
+    return await menu_service.get_full(menu.id, current_user, db)
+
+
+@router.put("/{menu_id}/items/{item_id}/cooked", response_model=MenuOut)
+async def set_menu_item_cooked(
+    menu_id: int,
+    item_id: int,
+    payload: MenuItemCooked,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Marks a recipe of a menu as cooked this week, or back to cook (owner or guest)."""
+    menu = await menu_service.get_accessible_or_404(menu_id, current_user, db)
+    await menu_service.set_item_cooked(menu, item_id, payload.cooked, db)
     return await menu_service.get_full(menu.id, current_user, db)
 
 

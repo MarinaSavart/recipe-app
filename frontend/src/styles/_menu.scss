@@ -131,6 +131,13 @@
     margin-bottom: $spacing-lg;
   }
 
+  &__all-cooked {
+    max-width: 820px;
+    font-size: 14px;
+    color: $amber;
+    margin-bottom: $spacing-lg;
+  }
+
   &__group-title {
     font-size: 11px;
     font-weight: 500;
@@ -319,8 +326,19 @@
     transition: color $transition, border-color $transition;
 
     &--danger { color: #e57373; border-color: $danger; }
+    &--done   { color: $amber; border-color: $amber-dim; }
     &:hover { color: $text; border-color: $amber-dim; }
     &:disabled { opacity: 0.4; cursor: not-allowed; }
+  }
+
+  // Already cooked this week: greyed out, the title struck through
+  &--cooked {
+    opacity: 0.55;
+
+    &:hover { border-color: $border; }
+
+    .menu-recipe__thumb { filter: grayscale(1); }
+    .menu-recipe__title { text-decoration: line-through; }
   }
 }
 

@@ -30,6 +30,18 @@ export interface MenuItemGroup {
   items: MenuItem[]
 }
 
+/** The menu's recipes still to cook, in menu order. */
+export function itemsToCook(items: MenuItem[]): MenuItem[] {
+  return items.filter(item => item.cookedAt === null)
+}
+
+/** The menu's recipes already cooked, most recently cooked first. */
+export function cookedItems(items: MenuItem[]): MenuItem[] {
+  return items
+    .filter(item => item.cookedAt !== null)
+    .sort((a, b) => (b.cookedAt ?? '').localeCompare(a.cookedAt ?? ''))
+}
+
 /**
  * Groups the menu's items by recipe category, in the app's category order,
  * with uncategorized items (or deleted recipes) last under "Autres".

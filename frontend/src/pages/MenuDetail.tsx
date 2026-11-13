@@ -18,6 +18,7 @@ import {
   getShoppingList,
   removeMenuGuest,
   updateMenu,
+  setMenuItemCooked,
   updateMenuItem,
 } from '../services/api'
 import { loadGoals } from '../services/goals'
@@ -27,8 +28,10 @@ import type { RecipeListItem } from '../types/recipe'
 import {
   averagePerMeal,
   deleteMenuConfirm,
+  cookedItems,
   groupByCategory,
   guestLabel,
+  itemsToCook,
   leaveMenuConfirm,
   menuInviteUrl,
   perMealTargets,
@@ -174,6 +177,11 @@ export default function MenuDetail() {
         ? { ...s, menu: { ...s.menu, items: s.menu.items.filter(i => i.id !== item.id) } }
         : s)
     })
+  }
+
+  /** Moves a recipe to the "cooked" section, or back to the recipes to cook. */
+  function handleCookedChange(item: MenuItem, cooked: boolean) {
+    mutate(() => setMenuItemCooked(menu.id, item.id, cooked))
   }
 
   /** Changes how many portions of a recipe the menu uses. */
@@ -360,23 +368,47 @@ export default function MenuDetail() {
               <div className="empty__sub">Ajoute une recette pour commencer.</div>
             </div>
           ) : (
-            groupByCategory(menu.items).map(group => (
-              <section key={group.key} className="menu-detail__group">
-                <h2 className="menu-detail__group-title">{group.label}</h2>
-                <ul className="menu-detail__recipes">
-                  {group.items.map(item => (
-                    <MenuRecipeRow
-                      key={item.id}
-                      item={item}
-                      disabled={busy}
-                      onReplace={i => setPicker({ mode: 'replace', item: i })}
-                      onDelete={handleDeleteItem}
-                      onPortionsChange={handlePortionsChange}
-                    />
-                  ))}
-                </ul>
-              </section>
-            ))
+            <>
+              {itemsToCook(menu.items).length === 0 && (
+                <p className="menu-detail__all-cooked">🎉 Toutes les recettes de ce menu sont cuisinées !</p>
+              )}
+              {groupByCategory(itemsToCook(menu.items)).map(group => (
+                <section key={group.key} className="menu-detail__group">
+                  <h2 className="menu-detail__group-title">{group.label}</h2>
+                  <ul className="menu-detail__recipes">
+                    {group.items.map(item => (
+                      <MenuRecipeRow
+                        key={item.id}
+                        item={item}
+                        disabled={busy}
+                        onReplace={i => setPicker({ mode: 'replace', item: i })}
+                        onDelete={handleDeleteItem}
+                        onCookedChange={handleCookedChange}
+                        onPortionsChange={handlePortionsChange}
+                      />
+                    ))}
+                  </ul>
+                </section>
+              ))}
+              {cookedItems(menu.items).length > 0 && (
+                <section className="menu-detail__group menu-detail__group--cooked">
+                  <h2 className="menu-detail__group-title">✅ Déjà cuisinées</h2>
+                  <ul className="menu-detail__recipes">
+                    {cookedItems(menu.items).map(item => (
+                      <MenuRecipeRow
+                        key={item.id}
+                        item={item}
+                        disabled={busy}
+                        onReplace={i => setPicker({ mode: 'replace', item: i })}
+                        onDelete={handleDeleteItem}
+                        onCookedChange={handleCookedChange}
+                        onPortionsChange={handlePortionsChange}
+                      />
+                    ))}
+                  </ul>
+                </section>
+              )}
+            </>
           )}
         </div>
 

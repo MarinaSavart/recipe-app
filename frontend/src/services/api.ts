@@ -215,6 +215,7 @@ interface RawMenuItem {
   id: number
   portions: number
   position: number
+  cooked_at: string | null
   recipe: RawRecipeListItem | null
 }
 
@@ -247,6 +248,7 @@ function mapMenuItem(raw: RawMenuItem): MenuItem {
     id: raw.id,
     portions: raw.portions,
     position: raw.position,
+    cookedAt: raw.cooked_at,
     recipe: raw.recipe ? mapRecipeListItem(raw.recipe) : null,
   }
 }
@@ -326,6 +328,15 @@ export async function updateMenuItem(menuId: number, itemId: number, recipeId: n
   const raw = await request<RawMenu>(`/menus/${menuId}/items/${itemId}`, {
     method: 'PATCH',
     body: JSON.stringify({ recipe_id: recipeId, portions }),
+  })
+  return mapMenu(raw)
+}
+
+/** Marks a recipe of a menu as cooked this week (or back to cook) and returns the updated menu. */
+export async function setMenuItemCooked(menuId: number, itemId: number, cooked: boolean): Promise<Menu> {
+  const raw = await request<RawMenu>(`/menus/${menuId}/items/${itemId}/cooked`, {
+    method: 'PUT',
+    body: JSON.stringify({ cooked }),
   })
   return mapMenu(raw)
 }
