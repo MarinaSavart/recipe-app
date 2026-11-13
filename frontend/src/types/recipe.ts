@@ -77,6 +77,11 @@ export interface RecipeListItem {
   created_at: string
 }
 
+/** Home page recipe: a list item plus its ingredient names, to search by ingredient. */
+export interface RecipeSearchItem extends RecipeListItem {
+  ingredientNames: string[]
+}
+
 /** PATCH /recipes/:id payload — same keys as Recipe, all optional. */
 export interface UpdateRecipePayload {
   title: string

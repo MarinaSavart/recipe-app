@@ -92,7 +92,8 @@ function AppLayout() {
           <Routes>
             <Route path="/"                 element={<RecipeList onCountChange={setRecipeCount} />} />
             <Route path="/recipes/:id"      element={<RecipeDetail />} />
-            <Route path="/recipes/:id/edit" element={<RecipeEdit />} />
+            <Route path="/recipes/new"      element={<RecipeEdit key="new" />} />
+            <Route path="/recipes/:id/edit" element={<RecipeEdit key="edit" />} />
             <Route path="/import"           element={<RecipeImport />} />
             <Route path="/favorites"        element={<FavoritesRecipes onCountChange={setFavoritesCount} />} />
             <Route path="/profile"           element={<Profile />} />

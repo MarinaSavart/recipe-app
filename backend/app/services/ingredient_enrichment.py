@@ -21,8 +21,10 @@ from dataclasses import dataclass
 import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.config import settings
+from app.database import AsyncSessionLocal
 from app.models.ciqual import CiqualFood
 from app.models.recipe import Ingredient, Recipe
 from app.services.aisles import AISLES
@@ -505,6 +507,27 @@ async def enrich_recipe(recipe: Recipe, db: AsyncSession, update_macros: bool = 
         # updated_at is set by the DB on update and expired by the flush: reload it now,
         # an implicit lazy load during serialization would fail with the async session
         await db.refresh(recipe, attribute_names=["updated_at"])
+
+
+async def enrich_recipe_in_background(recipe_id: int, update_macros: bool = False) -> None:
+    """
+    Enriches a just-imported recipe after the response is sent (FastAPI BackgroundTasks),
+    so an import answers as soon as the recipe is saved, even when the LLM is slow.
+    The request's session is closed by then: this runs in its own session and commits
+    itself, like the enrichment script. Never raises: failures are logged and the
+    ingredients just stay un-enriched (the shopping list falls back to name keywords).
+    """
+    try:
+        async with AsyncSessionLocal() as db:
+            recipe = (await db.execute(
+                select(Recipe).options(selectinload(Recipe.ingredients)).where(Recipe.id == recipe_id)
+            )).scalar_one_or_none()
+            if recipe is None:
+                return  # deleted in the meantime
+            await enrich_recipe(recipe, db, update_macros=update_macros)
+            await db.commit()
+    except Exception:
+        logger.exception("Background enrichment failed for recipe %s", recipe_id)
 
 
 def reset_enrichment(ingredient: Ingredient, keep_link: bool = True) -> None:

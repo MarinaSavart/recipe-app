@@ -38,6 +38,8 @@ class MenuItem(Base):
     recipe_id: Mapped[int | None] = mapped_column(ForeignKey("recipes.id", ondelete="SET NULL"), nullable=True)
     portions: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")  # = meals covered
     position: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    # When the recipe was marked as cooked this week, null while it's still to cook
+    cooked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     menu: Mapped["Menu"] = relationship("Menu", back_populates="items")
     recipe: Mapped["Recipe | None"] = relationship("Recipe")

@@ -13,6 +13,7 @@ class MenuItemOut(BaseModel):
     id: int
     portions: int  # number of meals covered by this recipe
     position: int
+    cooked_at: datetime | None  # set once the recipe has been cooked, null while it's to cook
     recipe: RecipeListItem | None
     model_config = ConfigDict(from_attributes=True)
 
@@ -61,6 +62,11 @@ class MenuGenerateRequest(BaseModel):
     # automatic generation by the LLM
     name: str = Field(min_length=1, max_length=255)
     meals_count: int = Field(ge=1, le=MAX_MEALS_PER_MENU)
+
+
+class MenuItemCooked(BaseModel):
+    # marks a recipe of the menu as cooked (true) or back to cook (false)
+    cooked: bool
 
 
 class MenuItemCreate(BaseModel):

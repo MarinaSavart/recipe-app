@@ -5,6 +5,7 @@ export interface MenuItem {
   id: number
   portions: number     // number of meals covered by this recipe
   position: number
+  cookedAt: string | null  // when it was marked as cooked, null while it's still to cook
   recipe: RecipeListItem | null
 }
 

@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import IngredientNameInput from '../components/IngredientNameInput'
-import { getRecipe, searchCiqual, updateRecipe, uploadPhoto } from '../services/api'
-import type { CiqualFood, Recipe, Ingredient, Step } from '../types/recipe'
+import { createRecipe, getRecipe, searchCiqual, updateRecipe, uploadPhoto } from '../services/api'
+import type { CiqualFood, Recipe, Ingredient, Step, UpdateRecipePayload } from '../types/recipe'
 import { CATEGORIES, type CategoryKey } from '../utils/categories'
 import { resolveMediaUrl } from '../utils/recipeDisplay'
 
@@ -13,13 +13,21 @@ interface EditStep extends Omit<Step, 'id'> { id?: number }
 type EditIngredientTextField = Exclude<keyof EditIngredient, 'id' | 'position' | 'ciqual_food'>
 type EditStepTextField = Exclude<keyof EditStep, 'id' | 'position'>
 
-/** Recipe edit form: general info, macros, photo, ingredients, and steps. */
+/** Empty rows a new recipe starts with, so the form is ready to be filled. */
+const NEW_INGREDIENT: EditIngredient = { name: '', quantity: null, unit: null, notes: null, ciqual_food: null, position: 0 }
+const NEW_STEP: EditStep = { content: '', position: 0, duration_minutes: null }
+
+/**
+ * Recipe form: general info, macros, photo, ingredients, and steps.
+ * Edits the recipe of the URL (/recipes/:id/edit), or creates a new one (/recipes/new).
+ */
 export default function RecipeEdit() {
   const { id } = useParams<{ id: string }>()
+  const isNew = id === undefined
   const navigate = useNavigate()
 
   const [recipe, setRecipe] = useState<Recipe | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!isNew)
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
 
@@ -36,8 +44,8 @@ export default function RecipeEdit() {
   const [fats, setFats] = useState('')
 
   // Lists
-  const [ingredients, setIngredients] = useState<EditIngredient[]>([])
-  const [steps, setSteps] = useState<EditStep[]>([])
+  const [ingredients, setIngredients] = useState<EditIngredient[]>(isNew ? [NEW_INGREDIENT] : [])
+  const [steps, setSteps] = useState<EditStep[]>(isNew ? [NEW_STEP] : [])
 
   // Photo
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
@@ -151,18 +159,9 @@ export default function RecipeEdit() {
 
   // ── Save ───────────────────────────────────────────────────────────────────
 
-  /** Uploads the new photo (if any) and saves the recipe's fields, then navigates to the detail page. */
-  async function handleSave() {
-    if (!recipe || !title.trim()) return
-    setSaving(true)
-    try {
-      // 1. Upload photo if new
-      if (photoFile) {
-        await uploadPhoto(recipe.id, photoFile)
-      }
-
-      // 2. Patch the recipe
-      await updateRecipe(recipe.id, {
+  /** The form's content, as sent to the API (empty rows dropped, positions renumbered). */
+  function buildPayload(): UpdateRecipePayload {
+    return {
         title: title.trim(),
         description: description || null,
         category,
@@ -187,10 +186,32 @@ export default function RecipeEdit() {
         steps: steps
           .filter(s => s.content.trim())
           .map((s, i) => ({ ...s, position: i })),
-      })
+    }
+  }
 
-      showToast('Recette sauvegardée !')
-      setTimeout(() => navigate(`/recipes/${recipe.id}`), 1000)
+  /**
+   * Saves the recipe (creating it on the creation page) and its new photo if any,
+   * then navigates to the detail page.
+   */
+  async function handleSave() {
+    if (!title.trim() || (!isNew && !recipe)) return
+    setSaving(true)
+    try {
+      let recipeId: number
+      if (recipe) {
+        // Photo first, then the fields (the PATCH response is the up-to-date recipe)
+        if (photoFile) await uploadPhoto(recipe.id, photoFile)
+        await updateRecipe(recipe.id, buildPayload())
+        recipeId = recipe.id
+      } else {
+        // The photo needs the recipe's id: uploaded once the recipe exists
+        const created = await createRecipe(buildPayload())
+        if (photoFile) await uploadPhoto(created.id, photoFile)
+        recipeId = created.id
+      }
+
+      showToast(isNew ? 'Recette créée !' : 'Recette sauvegardée !')
+      setTimeout(() => navigate(`/recipes/${recipeId}`), 1000)
     } catch (e: unknown) {
       showToast(e instanceof Error ? e.message : 'Erreur inconnue', 'error')
     } finally {
@@ -207,15 +228,23 @@ export default function RecipeEdit() {
     </div>
   )
 
-  if (!recipe) return null
+  if (!isNew && !recipe) return null
+
+  /** Where "back" and "cancel" lead: the edited recipe, or the previous page when creating. */
+  function leave() {
+    if (recipe) navigate(`/recipes/${recipe.id}`)
+    else navigate(-1)
+  }
 
   return (
     <>
       <div className="page-header">
-        <button className="detail__back" onClick={() => navigate(`/recipes/${recipe.id}`)}>
+        <button className="detail__back" onClick={leave}>
           ← Retour
         </button>
-        <h1 className="page-header__title">Modifier la <em>recette</em></h1>
+        <h1 className="page-header__title">
+          {isNew ? <>Créer une <em>recette</em></> : <>Modifier la <em>recette</em></>}
+        </h1>
       </div>
 
       <div className="edit-page">
@@ -305,17 +334,17 @@ export default function RecipeEdit() {
 
             <div className="edit-field">
               <label className="edit-field__label">Portions</label>
-              <input className="edit-field__input" type="number" value={servings} onChange={e => setServings(e.target.value)} placeholder="4" />
+              <input className="edit-field__input" type="number" min="0" value={servings} onChange={e => setServings(e.target.value)} placeholder="4" />
             </div>
 
             <div className="edit-field">
               <label className="edit-field__label">Temps de préparation (min)</label>
-              <input className="edit-field__input" type="number" value={prepTime} onChange={e => setPrepTime(e.target.value)} placeholder="15" />
+              <input className="edit-field__input" type="number" min="0" value={prepTime} onChange={e => setPrepTime(e.target.value)} placeholder="15" />
             </div>
 
             <div className="edit-field">
               <label className="edit-field__label">Temps de cuisson (min)</label>
-              <input className="edit-field__input" type="number" value={cookTime} onChange={e => setCookTime(e.target.value)} placeholder="30" />
+              <input className="edit-field__input" type="number" min="0" value={cookTime} onChange={e => setCookTime(e.target.value)} placeholder="30" />
             </div>
 
           </div>
@@ -327,19 +356,19 @@ export default function RecipeEdit() {
           <div className="edit-page__grid">
             <div className="edit-field">
               <label className="edit-field__label">Calories (kcal)</label>
-              <input className="edit-field__input" type="number" value={calories} onChange={e => setCalories(e.target.value)} placeholder="340" />
+              <input className="edit-field__input" type="number" min="0" value={calories} onChange={e => setCalories(e.target.value)} placeholder="340" />
             </div>
             <div className="edit-field">
               <label className="edit-field__label">Protéines (g)</label>
-              <input className="edit-field__input" type="number" value={proteins} onChange={e => setProteins(e.target.value)} placeholder="45" />
+              <input className="edit-field__input" type="number" min="0" value={proteins} onChange={e => setProteins(e.target.value)} placeholder="45" />
             </div>
             <div className="edit-field">
               <label className="edit-field__label">Glucides (g)</label>
-              <input className="edit-field__input" type="number" value={carbs} onChange={e => setCarbs(e.target.value)} placeholder="30" />
+              <input className="edit-field__input" type="number" min="0" value={carbs} onChange={e => setCarbs(e.target.value)} placeholder="30" />
             </div>
             <div className="edit-field">
               <label className="edit-field__label">Lipides (g)</label>
-              <input className="edit-field__input" type="number" value={fats} onChange={e => setFats(e.target.value)} placeholder="9" />
+              <input className="edit-field__input" type="number" min="0" value={fats} onChange={e => setFats(e.target.value)} placeholder="9" />
             </div>
           </div>
         </div>
@@ -422,11 +451,13 @@ export default function RecipeEdit() {
             onClick={handleSave}
             disabled={saving || !title.trim()}
           >
-            {saving ? <><span className="spinner" />Sauvegarde…</> : '💾 Sauvegarder'}
+            {saving
+              ? <><span className="spinner" />Sauvegarde…</>
+              : isNew ? '✨ Créer la recette' : '💾 Sauvegarder'}
           </button>
           <button
             className="btn-ghost"
-            onClick={() => navigate(`/recipes/${recipe.id}`)}
+            onClick={leave}
           >
             Annuler
           </button>

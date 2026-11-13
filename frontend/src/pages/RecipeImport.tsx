@@ -74,6 +74,9 @@ export default function RecipeImport() {
         <p className="page-header__sub">
           Depuis une URL ou en collant la description directement
         </p>
+        <button className="btn-ghost page-header__action" onClick={() => navigate('/recipes/new')}>
+          ✏️ Ou crée ta recette à la main
+        </button>
       </div>
 
       <div className="import-page">
@@ -111,18 +114,18 @@ export default function RecipeImport() {
             ⚡ Import automatique
           </h2>
           <label className="import-page__label">
-            Lien Instagram, TikTok ou YouTube
+            Lien Instagram, TikTok, YouTube ou d'un site de recettes (Marmiton, 750g, blog…)
           </label>
           <input
             className="import-page__input"
             type="url"
-            placeholder={'https://www.instagram.com/reel/...\nou https://www.tiktok.com/...\nou https://www.youtube.com/watch?v=...'}
+            placeholder="https://www.instagram.com/reel/… ou https://www.marmiton.org/recettes/…"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleImportUrl()}
           />
           <p className="import-page__hint">
-            Supporte Instagram, TikTok et YouTube.
+            Supporte Instagram, TikTok, YouTube et les sites de recettes.
             Pour YouTube, assure-toi que la recette est dans la description de la vidéo.
           </p>
           <button
@@ -136,6 +139,11 @@ export default function RecipeImport() {
               '⚡ Importer depuis l\'URL'
             )}
           </button>
+          {loadingUrl && (
+            <p className="import-page__progress" role="status">
+              L'IA analyse la recette… En général 10 à 30 secondes, jusqu'à une minute quand le service est chargé.
+            </p>
+          )}
         </div>
 
         {/* Divider */}
@@ -177,6 +185,11 @@ export default function RecipeImport() {
               '✍️ Importer la description'
             )}
           </button>
+          {loadingManual && (
+            <p className="import-page__progress" role="status">
+              L'IA analyse la recette… En général 10 à 30 secondes, jusqu'à une minute quand le service est chargé.
+            </p>
+          )}
         </div>
 
       </div>

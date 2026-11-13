@@ -7,7 +7,7 @@ from app.models.ciqual import CiqualFood
 from app.models.recipe import Ingredient, Recipe, RecipeLike, Step
 from app.models.user import User
 from app.schemas.recipe import RecipeCreate, RecipeUpdate
-from app.services.ingredient_enrichment import MACRO_FIELDS, copy_enrichment
+from app.services.ingredient_enrichment import MACRO_FIELDS, copy_enrichment, is_section_marker
 
 
 async def get_or_404(recipe_id: int, db: AsyncSession) -> Recipe:
@@ -30,6 +30,23 @@ async def get_or_404(recipe_id: int, db: AsyncSession) -> Recipe:
     if not recipe:
         raise HTTPException(status_code=404, detail="Recette introuvable")
     return recipe
+
+
+def attach_ingredient_names(recipes: list[Recipe]) -> None:
+    """
+    Sets `ingredient_names` on each recipe (for RecipeSearchItem): the names as written
+    and their canonical names ("gousses d'ail" → "ail"), without duplicates nor section
+    titles. `recipe.ingredients` must be loaded.
+    """
+    for recipe in recipes:
+        names: dict[str, None] = {}  # ordered set
+        for ingredient in recipe.ingredients:
+            if is_section_marker(ingredient):
+                continue
+            for name in (ingredient.name, ingredient.canonical_name):
+                if name and name.strip():
+                    names[name.strip()] = None
+        recipe.ingredient_names = list(names)
 
 
 async def attach_like_metadata(

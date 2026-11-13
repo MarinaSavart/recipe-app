@@ -1,8 +1,10 @@
 import logging
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+import httpx
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.dependencies import get_current_user, get_optional_user
@@ -11,8 +13,11 @@ from app.models.user import User
 from app.schemas.recipe import (
     ImportManualRequest,
     ImportRequest,
+    RecipeCreate,
+    RecipeFormCreate,
     RecipeListItem,
     RecipeOut,
+    RecipeSearchItem,
     RecipeUpdate,
 )
 from app.services import ingredient_enrichment as enrichment_service
@@ -23,6 +28,8 @@ from app.services.extractor import extract_from_url
 
 router = APIRouter(prefix="/recipes", tags=["recipes"])
 logger = logging.getLogger(__name__)
+
+AI_UNAVAILABLE_DETAIL = "Le service d'IA est surchargé ou indisponible. Réessaie dans un instant."
 
 ALLOWED_CATEGORIES = {
     "breakfast",
@@ -39,16 +46,17 @@ ALLOWED_CATEGORIES = {
 @router.post("/import", response_model=RecipeOut, status_code=status.HTTP_201_CREATED)
 async def import_from_url(
     payload: ImportRequest,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """
-    Automatic import from an Instagram or TikTok URL.
+    Automatic import from an Instagram, TikTok or YouTube URL, or a recipe website.
     Steps:
-      1. yt-dlp extracts the description and metadata
+      1. yt-dlp extracts the description and metadata (a website: its schema.org recipe or text)
       2. Claude parses the description into a structured recipe
-      3. We save it to the database, enrich its ingredients (LLM + Ciqual)
-         and return the recipe
+      3. We save it to the database and return the recipe; its ingredients are
+         enriched (LLM + Ciqual) in the background, after the response
     A category can optionally be supplied to override Claude's guess,
     for cases where it can't be reliably inferred from the video.
     """
@@ -73,6 +81,13 @@ async def import_from_url(
         recipe_data = await parse_recipe(
             extracted.description,
             suggested_title=extracted.title
+        )
+    except httpx.HTTPError:
+        # OpenRouter too slow (free models are queued when busy) or unavailable
+        logger.warning("OpenRouter unavailable during recipe parsing", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=AI_UNAVAILABLE_DETAIL,
         )
     except Exception:
         logger.exception("Recipe parsing failed")
@@ -99,8 +114,9 @@ async def import_from_url(
     )
 
     saved_recipe = await recipe_service.get_or_404(recipe.id, db)
-    # Canonical names, aisles, Ciqual links; macros recomputed from Ciqual when complete
-    await enrichment_service.enrich_recipe(saved_recipe, db, update_macros=True)
+    # Canonical names, aisles, Ciqual links and macros recomputed from Ciqual: up to three
+    # LLM calls, done after the response so the import doesn't wait for them
+    background_tasks.add_task(enrichment_service.enrich_recipe_in_background, recipe.id, update_macros=True)
     await recipe_service.attach_like_metadata(saved_recipe, db, current_user)
     return saved_recipe
 
@@ -108,6 +124,7 @@ async def import_from_url(
 @router.post("/import/manual", response_model=RecipeOut, status_code=status.HTTP_201_CREATED)
 async def import_manual(
     payload: ImportManualRequest,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -126,6 +143,13 @@ async def import_manual(
 
     try:
         recipe_data = await parse_recipe(description)
+    except httpx.HTTPError:
+        # OpenRouter too slow (free models are queued when busy) or unavailable
+        logger.warning("OpenRouter unavailable during recipe parsing", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=AI_UNAVAILABLE_DETAIL,
+        )
     except Exception:
         logger.exception("Recipe parsing failed")
         raise HTTPException(
@@ -147,8 +171,37 @@ async def import_manual(
     )
 
     saved_recipe = await recipe_service.get_or_404(recipe.id, db)
-    # Canonical names, aisles, Ciqual links; macros recomputed from Ciqual when complete
-    await enrichment_service.enrich_recipe(saved_recipe, db, update_macros=True)
+    # Canonical names, aisles, Ciqual links and macros recomputed from Ciqual: up to three
+    # LLM calls, done after the response so the import doesn't wait for them
+    background_tasks.add_task(enrichment_service.enrich_recipe_in_background, recipe.id, update_macros=True)
+    await recipe_service.attach_like_metadata(saved_recipe, db, current_user)
+    return saved_recipe
+
+
+@router.post("/", response_model=RecipeOut, status_code=status.HTTP_201_CREATED)
+async def create_recipe(
+    payload: RecipeFormCreate,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Creates a recipe written by hand in the creation form (no extraction, no LLM parsing).
+    Its ingredients are enriched in the background, after the response; macros typed
+    in the form are kept, empty ones are filled from Ciqual when the computation is complete.
+    """
+    if payload.category is not None and payload.category not in ALLOWED_CATEGORIES:
+        raise HTTPException(status_code=422, detail="Catégorie invalide")
+
+    recipe = await recipe_service.save_recipe(
+        RecipeCreate(**payload.model_dump()),
+        db,
+        user_id=current_user.id,
+        source_platform="manual",
+    )
+
+    saved_recipe = await recipe_service.get_or_404(recipe.id, db)
+    background_tasks.add_task(enrichment_service.enrich_recipe_in_background, recipe.id, update_macros=False)
     await recipe_service.attach_like_metadata(saved_recipe, db, current_user)
     return saved_recipe
 
@@ -183,26 +236,28 @@ async def list_my_recipes(
     return recipes
 
 
-@router.get("/", response_model=list[RecipeListItem])
+@router.get("/", response_model=list[RecipeSearchItem])
 async def list_recipes(
     category: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User | None = Depends(get_optional_user),
 ):
     """
-    Returns all recipes (visible to any user, logged in or not),
-    lightweight version (no ingredients/steps). Sorted from newest to oldest.
-    Optionally filtered by category.
+    Returns all recipes (visible to any user, logged in or not), lightweight version
+    with only their ingredient names (for the home page search), no steps.
+    Sorted from newest to oldest. Optionally filtered by category.
     """
     if category is not None and category not in ALLOWED_CATEGORIES:
         raise HTTPException(status_code=422, detail="Catégorie invalide")
 
-    query = select(Recipe).order_by(Recipe.created_at.desc())
+    # One extra query for every recipe's ingredients (no N+1)
+    query = select(Recipe).options(selectinload(Recipe.ingredients)).order_by(Recipe.created_at.desc())
     if category is not None:
         query = query.where(Recipe.category == category)
 
     result = await db.execute(query)
     recipes = list(result.scalars().all())
+    recipe_service.attach_ingredient_names(recipes)
     await recipe_service.attach_like_metadata(recipes, db, current_user)
     return recipes
 

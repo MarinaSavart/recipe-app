@@ -4,17 +4,19 @@ import { useNavigate } from 'react-router-dom'
 import type { RecipeListItem } from '../types/recipe'
 import { likeRecipe, unlikeRecipe } from '../services/api'
 import { categoryLabel } from '../utils/categories'
-import { getPlatformLabel } from '../utils/platforms'
+import { formatSourceAuthor, getPlatformLabel } from '../utils/platforms'
 import { resolveMediaUrl } from '../utils/recipeDisplay'
 
 interface RecipeCardProps {
   recipe: RecipeListItem
   isLiked: boolean
   onLikeToggle: (id: number) => void
+  /** Ingredients that matched a search, shown as "Contient : …" */
+  matchedIngredients?: string[]
 }
 
 /** Clickable recipe preview card with a thumbnail, macros, and a like toggle. */
-export default function RecipeCard({ recipe, isLiked, onLikeToggle }: RecipeCardProps) {
+export default function RecipeCard({ recipe, isLiked, onLikeToggle, matchedIngredients = [] }: RecipeCardProps) {
   const navigate = useNavigate()
   const [liked, setLiked] = useState(isLiked)
 
@@ -60,8 +62,12 @@ export default function RecipeCard({ recipe, isLiked, onLikeToggle }: RecipeCard
           </div>
         )}
 
+        {matchedIngredients.length > 0 && (
+          <div className="recipe-card__match">Contient : {matchedIngredients.join(', ')}</div>
+        )}
+
         {recipe.source_author && (
-          <div className="recipe-card__author">@{recipe.source_author}</div>
+          <div className="recipe-card__author">{formatSourceAuthor(recipe.source_author, recipe.source_platform)}</div>
         )}
 
         <div className="recipe-card__macros">
@@ -76,12 +82,12 @@ export default function RecipeCard({ recipe, isLiked, onLikeToggle }: RecipeCard
             </span>
           )}
           {recipe.carbs_g && (
-            <span className="macro-pill">
+            <span className="macro-pill macro-pill--secondary">
               <strong>{Math.round(recipe.carbs_g)}</strong> gluc.
             </span>
           )}
           {recipe.fats_g && (
-            <span className="macro-pill">
+            <span className="macro-pill macro-pill--secondary">
               <strong>{Math.round(recipe.fats_g)}</strong> lip.
             </span>
           )}

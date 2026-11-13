@@ -21,7 +21,8 @@
 * Alembic
 * Pydantic v2
 * OpenRouter (Nemotron 3 Ultra) pour le parsing des recettes, la génération de menus et l'enrichissement des ingrédients (Ciqual)
-* yt-dlp pour l'extraction de métadonnées Instagram/TikTok
+* yt-dlp pour l'extraction de métadonnées Instagram/TikTok/YouTube
+* Import depuis n'importe quel site de recettes : données schema.org Recipe (sinon texte de la page), récupérées via `app/services/safe_http.py` (protection SSRF : jamais de requête serveur vers une URL utilisateur sans passer par ce module)
 * bcrypt pour le hashage des mots de passe
 * JWT pour l'authentification
 
@@ -69,7 +70,9 @@ app/
 │   └── user.py          # Pydantic I/O auth
 │
 ├── services/
-│   ├── extractor.py     # Wrapper yt-dlp
+│   ├── extractor.py     # Wrapper yt-dlp, ou site web via web_recipe.py
+│   ├── web_recipe.py    # Recette d'un site (schema.org Recipe, sinon texte)
+│   ├── safe_http.py     # GET protégé contre le SSRF (URL fournies par l'utilisateur)
 │   ├── claude.py        # OpenRouter parsing description → JSON
 │   ├── menu_generator.py # OpenRouter génération de menus
 │   ├── ingredient_enrichment.py # OpenRouter + Ciqual enrichissement des ingrédients

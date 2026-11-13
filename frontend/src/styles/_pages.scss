@@ -25,6 +25,9 @@
 .page-header {
   margin-bottom: $spacing-2xl;
 
+  // Secondary action under the title (e.g. "create by hand" on the import page)
+  &__action { margin-top: $spacing-md; }
+
   &__title {
     font-family: $font-display;
     font-size: 36px;
@@ -46,6 +49,35 @@
 }
 
 // ── Category filters ───────────────────────────────────────────────────────────
+// ── Recherche (page d'accueil) ─────────────────────────────────────────────────
+.recipe-search {
+  max-width: 560px;
+  margin-bottom: $spacing-lg;
+
+  &__input {
+    width: 100%;
+    background: $surface;
+    border: 1px solid $border;
+    border-radius: $radius-full;
+    color: $text;
+    font-family: $font-body;
+    font-size: 14px;
+    padding: 10px $spacing-lg;
+    outline: none;
+    transition: border-color $transition;
+
+    &:focus { border-color: $amber-dim; }
+    &::placeholder { color: $muted; }
+  }
+
+  &__count {
+    font-size: 12px;
+    color: $muted;
+    margin-top: $spacing-sm;
+    padding-left: $spacing-lg;
+  }
+}
+
 .category-filters {
   display: flex;
   gap: $spacing-sm;
@@ -361,6 +393,13 @@
     color: $muted;
     margin-top: -#{$spacing-sm};
     margin-bottom: $spacing-md;
+  }
+
+  // Shown under the button while the import runs, so a long wait doesn't look stuck
+  &__progress {
+    font-size: 12px;
+    color: $muted;
+    margin-top: $spacing-sm;
   }
 
   &__divider {
@@ -746,12 +785,15 @@
 @media (max-width: 768px) {
   .page-header__title { font-size: 26px; }
 
+  // Chips wrap on a few lines (all visible, one tap) instead of a sideways scroll
   .category-filters {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding-bottom: $spacing-xs;
+    gap: 6px;
+    margin-bottom: $spacing-lg;
 
-    &__btn { flex-shrink: 0; }
+    &__btn {
+      padding: 6px 10px;
+      font-size: 12px;
+    }
 
     &--wrap {
       flex-wrap: wrap;
@@ -760,9 +802,13 @@
     }
   }
 
+  // Two compact cards per row (see .recipe-card in _cards.scss)
   .recipes-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: $spacing-sm;
   }
+
+  .page-header { margin-bottom: $spacing-lg; }
 
   .detail {
     max-width: 100%;

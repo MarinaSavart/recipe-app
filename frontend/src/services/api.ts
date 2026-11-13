@@ -1,4 +1,4 @@
-import type { CiqualFood, Recipe, RecipeListItem, UpdateRecipePayload } from "../types/recipe"
+import type { CiqualFood, Recipe, RecipeListItem, RecipeSearchItem, UpdateRecipePayload } from "../types/recipe"
 import type { Menu, MenuGenerateParams, MenuGuest, MenuItem, MenuListItem, ShoppingListItem } from "../types/menu"
 import { DEFAULT_GOALS, type SyncedNutritionalGoals } from "../types/profil"
 
@@ -103,11 +103,14 @@ export async function register(name: string, email: string, password: string): P
 
 // ── Recipes ────────────────────────────────────────────────────────────────────
 
-/** Fetches the lightweight list of all recipes, optionally filtered by category. */
-export async function getRecipes(category?: string): Promise<RecipeListItem[]> {
+/** Fetches the lightweight list of all recipes with their ingredient names, optionally filtered by category. */
+export async function getRecipes(category?: string): Promise<RecipeSearchItem[]> {
     const params = category ? `?category=${encodeURIComponent(category)}` : ''
-    const raw = await request<RawRecipeListItem[]>(`/recipes/${params}`)
-    return raw.map(mapRecipeListItem)
+    const raw = await request<(RawRecipeListItem & { ingredient_names: string[] })[]>(`/recipes/${params}`)
+    return raw.map(({ ingredient_names, ...item }) => ({
+        ...mapRecipeListItem(item),
+        ingredientNames: ingredient_names,
+    }))
 }
 
 /** Fetches a single recipe with its full details (ingredients, steps). */
@@ -167,6 +170,15 @@ export async function deleteRecipe(id: number): Promise<void> {
   })
 }
 
+/** Creates a recipe written by hand in the creation form, owned by the current user. */
+export async function createRecipe(data: UpdateRecipePayload): Promise<Recipe> {
+  const raw = await request<RawRecipe>('/recipes/', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+  return mapRecipe(raw)
+}
+
 /** Updates a recipe with the given partial payload (owner only). */
 export async function updateRecipe(id: number, data: Partial<UpdateRecipePayload>): Promise<Recipe> {
   const raw = await request<RawRecipe>(`/recipes/${id}`, {
@@ -206,6 +218,7 @@ interface RawMenuItem {
   id: number
   portions: number
   position: number
+  cooked_at: string | null
   recipe: RawRecipeListItem | null
 }
 
@@ -238,6 +251,7 @@ function mapMenuItem(raw: RawMenuItem): MenuItem {
     id: raw.id,
     portions: raw.portions,
     position: raw.position,
+    cookedAt: raw.cooked_at,
     recipe: raw.recipe ? mapRecipeListItem(raw.recipe) : null,
   }
 }
@@ -317,6 +331,15 @@ export async function updateMenuItem(menuId: number, itemId: number, recipeId: n
   const raw = await request<RawMenu>(`/menus/${menuId}/items/${itemId}`, {
     method: 'PATCH',
     body: JSON.stringify({ recipe_id: recipeId, portions }),
+  })
+  return mapMenu(raw)
+}
+
+/** Marks a recipe of a menu as cooked this week (or back to cook) and returns the updated menu. */
+export async function setMenuItemCooked(menuId: number, itemId: number, cooked: boolean): Promise<Menu> {
+  const raw = await request<RawMenu>(`/menus/${menuId}/items/${itemId}/cooked`, {
+    method: 'PUT',
+    body: JSON.stringify({ cooked }),
   })
   return mapMenu(raw)
 }
