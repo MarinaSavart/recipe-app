@@ -2,6 +2,19 @@ import type { Ingredient } from '../types/recipe'
 
 const API_URL = import.meta.env.VITE_API_URL
 
+/** Most portions the recipe page accepts from a link (?portions=), like the menu's portion stepper. */
+const MAX_LINKED_PORTIONS = 99
+
+/**
+ * Portions requested by a link to a recipe (`?portions=3`, e.g. from a menu), or null
+ * when absent or invalid (not a whole number between 1 and MAX_LINKED_PORTIONS).
+ */
+export function parsePortionsParam(value: string | null): number | null {
+  if (value === null || !/^\d+$/.test(value)) return null
+  const portions = Number(value)
+  return portions >= 1 && portions <= MAX_LINKED_PORTIONS ? portions : null
+}
+
 /**
  * Resolves a media URL returned by the backend into an absolute URL.
  * Relative /uploads paths are prefixed with the API base URL; any other

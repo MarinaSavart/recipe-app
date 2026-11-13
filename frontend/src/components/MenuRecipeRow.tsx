@@ -48,7 +48,11 @@ export default function MenuRecipeRow({ item, disabled, onReplace, onDelete, onC
 
       <div className="menu-recipe__body">
         {recipe ? (
-          <button className="menu-recipe__title" onClick={() => navigate(`/recipes/${recipe.id}`)}>
+          <button
+            className="menu-recipe__title"
+            // The recipe opens scaled to the portions this menu cooks
+            onClick={() => navigate(`/recipes/${recipe.id}?portions=${item.portions}`)}
+          >
             {recipe.title}
           </button>
         ) : (

@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import MacroBox from '../components/MacroBox'
 import { useConfirm } from '../hooks/useConfirm'
 import { useWakeLock } from '../hooks/useWakeLock'
 import { getRecipe, deleteRecipe, likeRecipe, unlikeRecipe } from '../services/api'
 import type { Recipe } from '../types/recipe'
-import { formatQty, groupIngredientsBySection, resolveMediaUrl } from '../utils/recipeDisplay'
+import { formatQty, groupIngredientsBySection, parsePortionsParam, resolveMediaUrl } from '../utils/recipeDisplay'
 import { formatSourceAuthor, getPlatformLabel, sourceLinkLabel } from '../utils/platforms'
 
 /** Full recipe view: details, macros, portions selector, ingredients, steps, and actions. */
@@ -20,17 +20,20 @@ export default function RecipeDetail() {
   useWakeLock()
   const [deleting, setDeleting] = useState(false)
   const [portions, setPortions] = useState<number>(1)
+  // Opened from a menu: start with the portions the menu plans to cook (?portions=3)
+  const [searchParams] = useSearchParams()
+  const linkedPortions = parsePortionsParam(searchParams.get('portions'))
 
   useEffect(() => {
     if (!id) return
     getRecipe(Number(id))
       .then((data) => {
         setRecipe(data)
-        setPortions(data.servings ?? 1)
+        setPortions(linkedPortions ?? data.servings ?? 1)
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false))
-  }, [id])
+  }, [id, linkedPortions])
 
   /** Toggles the like state optimistically, reverting it on request failure. */
   function handleLikeToggle() {
