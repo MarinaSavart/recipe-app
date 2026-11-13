@@ -103,7 +103,7 @@ Les nouvelles recettes sont enrichies automatiquement à l'import. Dans l'éditi
 | `GET` | `/health` | Health check |
 | `GET` | `/recipes/` | Liste toutes les recettes |
 | `GET` | `/recipes/{id}` | Détail d'une recette |
-| `POST` | `/recipes/import` | Import depuis une URL Instagram/TikTok |
+| `POST` | `/recipes/import` | Import depuis une URL Instagram/TikTok/YouTube ou un site de recettes |
 | `POST` | `/recipes/import/manual` | Import depuis une description collée |
 | `PATCH` | `/recipes/{id}` | Mise à jour d'une recette |
 | `POST` | `/recipes/{id}/photo` | Upload d'une photo |
@@ -123,7 +123,9 @@ backend/
 │   ├── schemas/
 │   │   └── recipe.py        # Schemas Pydantic
 │   ├── services/
-│   │   ├── extractor.py     # Extraction yt-dlp
+│   │   ├── extractor.py     # Extraction yt-dlp (réseaux sociaux) ou site web
+│   │   ├── web_recipe.py    # Recette d'un site (schema.org Recipe, sinon texte)
+│   │   ├── safe_http.py     # Requêtes vers des URL utilisateur, protégées contre le SSRF
 │   │   ├── claude.py        # Parsing OpenRouter
 │   │   ├── menu_generator.py # Génération de menus OpenRouter
 │   │   └── ingredient_enrichment.py # Enrichissement OpenRouter + Ciqual
