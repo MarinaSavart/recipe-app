@@ -6,7 +6,7 @@ import { useWakeLock } from '../hooks/useWakeLock'
 import { getRecipe, deleteRecipe, likeRecipe, unlikeRecipe } from '../services/api'
 import type { Recipe } from '../types/recipe'
 import { formatQty, groupIngredientsBySection, resolveMediaUrl } from '../utils/recipeDisplay'
-import { getPlatformLabel } from '../utils/platforms'
+import { formatSourceAuthor, getPlatformLabel, sourceLinkLabel } from '../utils/platforms'
 
 /** Full recipe view: details, macros, portions selector, ingredients, steps, and actions. */
 export default function RecipeDetail() {
@@ -116,12 +116,12 @@ export default function RecipeDetail() {
       )}
       <h1 className="detail__title">{recipe.title}</h1>
       {recipe.source_author && (
-        <div className="detail__author">@{recipe.source_author}</div>
+        <div className="detail__author">{formatSourceAuthor(recipe.source_author, recipe.source_platform)}</div>
       )}
       {recipe.source_url &&
        (recipe.source_url.startsWith('http://') || recipe.source_url.startsWith('https://')) && (
         <a className="detail__source" href={recipe.source_url} target="_blank" rel="noreferrer">
-          ↗ Voir la vidéo originale
+          ↗ {sourceLinkLabel(recipe.source_platform)}
         </a>
       )}
 

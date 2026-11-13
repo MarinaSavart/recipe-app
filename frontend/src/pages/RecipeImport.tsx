@@ -109,12 +109,12 @@ export default function RecipeImport() {
             ⚡ Import automatique
           </h2>
           <label className="import-page__label">
-            Lien Instagram, TikTok ou YouTube
+            Lien Instagram, TikTok, YouTube ou d'un site de recettes (Marmiton, 750g, blog…)
           </label>
           <input
             className="import-page__input"
             type="url"
-            placeholder={'https://www.instagram.com/reel/...\nou https://www.tiktok.com/...\nou https://www.youtube.com/watch?v=...'}
+            placeholder="https://www.instagram.com/reel/… ou https://www.marmiton.org/recettes/…"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleImportUrl()}

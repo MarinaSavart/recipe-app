@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import type { RecipeListItem } from '../types/recipe'
 import { likeRecipe, unlikeRecipe } from '../services/api'
 import { categoryLabel } from '../utils/categories'
-import { getPlatformLabel } from '../utils/platforms'
+import { formatSourceAuthor, getPlatformLabel } from '../utils/platforms'
 import { resolveMediaUrl } from '../utils/recipeDisplay'
 
 interface RecipeCardProps {
@@ -61,7 +61,7 @@ export default function RecipeCard({ recipe, isLiked, onLikeToggle }: RecipeCard
         )}
 
         {recipe.source_author && (
-          <div className="recipe-card__author">@{recipe.source_author}</div>
+          <div className="recipe-card__author">{formatSourceAuthor(recipe.source_author, recipe.source_platform)}</div>
         )}
 
         <div className="recipe-card__macros">
