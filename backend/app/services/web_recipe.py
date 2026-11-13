@@ -111,6 +111,19 @@ def _first_text(value: object) -> str:
     return _clean(value)
 
 
+def _author_name(value: object) -> str:
+    """
+    The author's name, or "" when the page only gives a reference to it: Yoast-based
+    blogs set "author": {"@id": "https://site/#/schema/person/..."}, not a name.
+    """
+    if isinstance(value, list):
+        return next((name for name in (_author_name(item) for item in value) if name), "")
+    if isinstance(value, dict):
+        return _clean(value.get("name"))
+    name = _clean(value)
+    return "" if name.startswith(("http://", "https://")) else name
+
+
 def _instructions(value: object) -> list[str]:
     """Flattens recipeInstructions: text, HowToStep, HowToSection (titled) or lists of them."""
     if isinstance(value, str):
@@ -200,7 +213,7 @@ async def extract_from_website(url: str) -> dict:
     if recipe:
         description = _recipe_to_text(recipe)
         title = _clean(recipe.get("name")) or None
-        author = _first_text(recipe.get("author")) or site_name
+        author = _author_name(recipe.get("author")) or site_name
         image = _first_text(recipe.get("image")) or parser.meta.get("og:image", "")
     else:
         logger.info("No schema.org Recipe on %s, falling back to the page text", page.url)
