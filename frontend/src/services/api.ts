@@ -167,6 +167,15 @@ export async function deleteRecipe(id: number): Promise<void> {
   })
 }
 
+/** Creates a recipe written by hand in the creation form, owned by the current user. */
+export async function createRecipe(data: UpdateRecipePayload): Promise<Recipe> {
+  const raw = await request<RawRecipe>('/recipes/', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+  return mapRecipe(raw)
+}
+
 /** Updates a recipe with the given partial payload (owner only). */
 export async function updateRecipe(id: number, data: Partial<UpdateRecipePayload>): Promise<Recipe> {
   const raw = await request<RawRecipe>(`/recipes/${id}`, {

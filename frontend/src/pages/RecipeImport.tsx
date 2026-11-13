@@ -72,6 +72,9 @@ export default function RecipeImport() {
         <p className="page-header__sub">
           Depuis une URL ou en collant la description directement
         </p>
+        <button className="btn-ghost page-header__action" onClick={() => navigate('/recipes/new')}>
+          ✏️ Ou crée ta recette à la main
+        </button>
       </div>
 
       <div className="import-page">

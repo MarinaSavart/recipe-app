@@ -12,6 +12,8 @@ from app.models.user import User
 from app.schemas.recipe import (
     ImportManualRequest,
     ImportRequest,
+    RecipeCreate,
+    RecipeFormCreate,
     RecipeListItem,
     RecipeOut,
     RecipeUpdate,
@@ -170,6 +172,34 @@ async def import_manual(
     # Canonical names, aisles, Ciqual links and macros recomputed from Ciqual: up to three
     # LLM calls, done after the response so the import doesn't wait for them
     background_tasks.add_task(enrichment_service.enrich_recipe_in_background, recipe.id, update_macros=True)
+    await recipe_service.attach_like_metadata(saved_recipe, db, current_user)
+    return saved_recipe
+
+
+@router.post("/", response_model=RecipeOut, status_code=status.HTTP_201_CREATED)
+async def create_recipe(
+    payload: RecipeFormCreate,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Creates a recipe written by hand in the creation form (no extraction, no LLM parsing).
+    Its ingredients are enriched in the background, after the response; macros typed
+    in the form are kept, empty ones are filled from Ciqual when the computation is complete.
+    """
+    if payload.category is not None and payload.category not in ALLOWED_CATEGORIES:
+        raise HTTPException(status_code=422, detail="Catégorie invalide")
+
+    recipe = await recipe_service.save_recipe(
+        RecipeCreate(**payload.model_dump()),
+        db,
+        user_id=current_user.id,
+        source_platform="manual",
+    )
+
+    saved_recipe = await recipe_service.get_or_404(recipe.id, db)
+    background_tasks.add_task(enrichment_service.enrich_recipe_in_background, recipe.id, update_macros=False)
     await recipe_service.attach_like_metadata(saved_recipe, db, current_user)
     return saved_recipe
 

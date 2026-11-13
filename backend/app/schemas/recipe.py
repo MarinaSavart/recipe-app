@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, HttpUrl, field_validator
+from pydantic import BaseModel, Field, HttpUrl, field_validator
 
 from app.schemas.ciqual import CiqualFoodOut
 
@@ -115,6 +115,26 @@ class RecipeListItem(BaseModel):
     likes_count: int
     created_at: datetime
     model_config = {"from_attributes": True}
+
+class RecipeFormCreate(BaseModel):
+    # a recipe written by hand in the creation form (no source, no LLM parsing)
+    title: str = Field(min_length=1, max_length=255)
+    description: Optional[str] = None
+    category: str | None = None
+    servings: Optional[int] = None
+    prep_time_minutes: Optional[int] = None
+    cook_time_minutes: Optional[int] = None
+    calories: Optional[float] = None
+    proteins_g: Optional[float] = None
+    carbs_g: Optional[float] = None
+    fats_g: Optional[float] = None
+    ingredients: list[IngredientCreate] = []
+    steps: list[StepCreate] = []
+
+    @field_validator("title")
+    @classmethod
+    def _normalize_title(cls, title: str) -> str:
+        return normalize_title(title)
 
 class RecipeUpdate(BaseModel):
     # all fields optional — only what's sent gets updated

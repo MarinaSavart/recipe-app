@@ -25,6 +25,9 @@
 .page-header {
   margin-bottom: $spacing-2xl;
 
+  // Secondary action under the title (e.g. "create by hand" on the import page)
+  &__action { margin-top: $spacing-md; }
+
   &__title {
     font-family: $font-display;
     font-size: 36px;
