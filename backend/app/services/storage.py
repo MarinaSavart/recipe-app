@@ -8,6 +8,7 @@ import httpx
 from fastapi import HTTPException, UploadFile
 
 from app.models.recipe import Recipe
+from app.services import safe_http
 
 logger = logging.getLogger(__name__)
 
@@ -63,28 +64,19 @@ async def save_remote_thumbnail(url: str | None) -> str | None:
     if not url or not url.startswith("https://"):
         return url
 
+    # Website imports bring arbitrary image URLs: fetched with the SSRF checks
     try:
-        async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
-            async with client.stream("GET", url) as response:
-                response.raise_for_status()
-
-                content_type = response.headers.get("content-type", "").split(";")[0].strip()
-                if content_type not in CONTENT_TYPE_EXTENSIONS:
-                    logger.warning("Unsupported thumbnail content-type: %s", content_type)
-                    return url
-
-                contents = bytearray()
-                async for chunk in response.aiter_bytes():
-                    contents.extend(chunk)
-                    if len(contents) > MAX_PHOTO_SIZE_BYTES:
-                        logger.warning("Thumbnail too large, keeping remote URL")
-                        return url
-    except httpx.HTTPError:
+        image = await safe_http.fetch(url, MAX_PHOTO_SIZE_BYTES)
+    except (httpx.HTTPError, ValueError):
         logger.warning("Thumbnail download failed, keeping remote URL", exc_info=True)
         return url
 
-    filename = f"{uuid.uuid4().hex}.{CONTENT_TYPE_EXTENSIONS[content_type]}"
-    await asyncio.to_thread((UPLOADS_DIR / filename).write_bytes, bytes(contents))
+    if image.content_type not in CONTENT_TYPE_EXTENSIONS:
+        logger.warning("Unsupported thumbnail content-type: %s", image.content_type)
+        return url
+
+    filename = f"{uuid.uuid4().hex}.{CONTENT_TYPE_EXTENSIONS[image.content_type]}"
+    await asyncio.to_thread((UPLOADS_DIR / filename).write_bytes, image.body)
 
     return f"/uploads/{filename}"
 

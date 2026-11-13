@@ -43,9 +43,9 @@ async def import_from_url(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Automatic import from an Instagram or TikTok URL.
+    Automatic import from an Instagram, TikTok or YouTube URL, or a recipe website.
     Steps:
-      1. yt-dlp extracts the description and metadata
+      1. yt-dlp extracts the description and metadata (a website: its schema.org recipe or text)
       2. Claude parses the description into a structured recipe
       3. We save it to the database, enrich its ingredients (LLM + Ciqual)
          and return the recipe

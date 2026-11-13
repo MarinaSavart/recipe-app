@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 import yt_dlp
 
 from app.config import settings
+from app.services.web_recipe import extract_from_website
 
 logger = logging.getLogger(__name__)
 
@@ -124,7 +125,8 @@ def _extract_sync(url: str, platform: str) -> dict:
 
 async def extract_from_url(url: str) -> ExtractedData:
     """
-    Extracts the metadata of an Instagram/TikTok reel or a YouTube video.
+    Extracts the metadata of an Instagram/TikTok reel or a YouTube video, or the
+    recipe of any other website (see web_recipe).
 
     We use run_in_executor to run the synchronous yt-dlp code
     in a separate thread without blocking FastAPI's event loop.
@@ -132,6 +134,18 @@ async def extract_from_url(url: str) -> ExtractedData:
     # url can be a pydantic.HttpUrl (not compatible with urlparse/yt-dlp): we
     # normalize it to str before any validation or processing.
     url = str(url)
+
+    # Any other site is a recipe website: fetched with SSRF checks, never through yt-dlp
+    if urlparse(url).hostname not in ALLOWED_DOMAINS:
+        page = await extract_from_website(url)
+        return ExtractedData(
+            description=page["description"],
+            title=page["title"],
+            author=page["author"],
+            thumbnail_url=page["thumbnail_url"],
+            platform="web",
+            source_url=url,
+        )
 
     # Domain validation BEFORE any call to yt-dlp (and before loading browser
     # cookies) to prevent an SSRF via an arbitrary URL.
